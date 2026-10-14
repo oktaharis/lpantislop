@@ -9,7 +9,7 @@
     if (matchMedia('(max-width: 760px)').matches) { el.style.fontSize = ''; return; }
     const target = el.parentElement.clientWidth - parseFloat(getComputedStyle(el.parentElement).paddingLeft) * 2;
     el.style.fontSize = '100px';
-    const w = span.getBoundingClientRect().width;
+    const w = span.offsetWidth;
     el.style.fontSize = Math.floor((100 * target) / w) + 'px';
   }
   const wm = $('#wordmark'), fm = $('#footmark');
