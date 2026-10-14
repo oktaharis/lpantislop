@@ -16,6 +16,31 @@
   const refit = () => { fit(wm); fit(fm); };
   refit();
   addEventListener('resize', refit);
+
+  /* Zoom keeps you on the same section: remember where we are, restore after a resize. */
+  const panels = $$('main > header, main > section, .foot');
+  let anchor = { el: panels[0], frac: 0 };
+  const track = () => {
+    const mid = innerHeight / 2;
+    for (const el of panels) {
+      const r = el.getBoundingClientRect();
+      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
+    }
+  };
+  let trackTick = false;
+  addEventListener('scroll', () => { if (!trackTick) { trackTick = true; requestAnimationFrame(() => { trackTick = false; track(); }); } }, { passive: true });
+  track();
+  let lastW = innerWidth;
+  addEventListener('resize', () => {
+    if (innerWidth === lastW && innerHeight === window.__lastH) return;
+    lastW = innerWidth; window.__lastH = innerHeight;
+    requestAnimationFrame(() => {
+      const r = anchor.el.getBoundingClientRect();
+      const y = scrollY + r.top + anchor.frac * r.height - innerHeight / 2;
+      scrollTo({ top: Math.max(0, y), behavior: 'instant' });
+    });
+  });
+  window.__lastH = innerHeight;
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
   /* Hero video: keep the photo if the clip is missing; stay still for reduced motion. */
@@ -24,7 +49,12 @@
     const srcs = $$('source', hv);
     const drop = () => { hv.remove(); };
     srcs[srcs.length - 1].addEventListener('error', drop);
-    if (reduce) { hv.pause(); hv.removeAttribute('autoplay'); }
+    hv.muted = true;
+    const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
+    start();
+    ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach((ev) =>
+      addEventListener(ev, function once() { if (hv.paused) start(); removeEventListener(ev, once); }, { passive: true }));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
   }
 
   /* Signature move: the wordmark scales with scroll (travel under 8%). */

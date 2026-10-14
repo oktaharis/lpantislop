@@ -30,7 +30,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; scroll-snap-type: y proximity; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
@@ -53,6 +53,11 @@ main { position: relative; z-index: 1; background: var(--bg); }
 /* ---------- reveal ---------- */
 .js [data-reveal] { opacity: 0; transform: translateY(24px); transition: opacity .7s var(--ease), transform .7s var(--ease); transition-delay: var(--d, 0ms); }
 .js [data-reveal].in { opacity: 1; transform: none; }
+
+/* ---------- full-screen sections ---------- */
+.hero, .services, .work, .how, .faq, .contact, .foot { min-height: 100svh; scroll-snap-align: start; }
+.services, .how, .faq { display: flex; flex-direction: column; justify-content: center; padding-top: 12vh; padding-bottom: 12vh; }
+.work { display: flex; flex-direction: column; justify-content: center; }
 
 /* ---------- hero ---------- */
 .hero { min-height: 100svh; display: grid; grid-template-rows: 58svh 1fr; }
@@ -382,6 +387,31 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
   const refit = () => { fit(wm); fit(fm); };
   refit();
   addEventListener('resize', refit);
+
+  /* Zoom keeps you on the same section: remember where we are, restore after a resize. */
+  const panels = $$('main > header, main > section, .foot');
+  let anchor = { el: panels[0], frac: 0 };
+  const track = () => {
+    const mid = innerHeight / 2;
+    for (const el of panels) {
+      const r = el.getBoundingClientRect();
+      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
+    }
+  };
+  let trackTick = false;
+  addEventListener('scroll', () => { if (!trackTick) { trackTick = true; requestAnimationFrame(() => { trackTick = false; track(); }); } }, { passive: true });
+  track();
+  let lastW = innerWidth;
+  addEventListener('resize', () => {
+    if (innerWidth === lastW && innerHeight === window.__lastH) return;
+    lastW = innerWidth; window.__lastH = innerHeight;
+    requestAnimationFrame(() => {
+      const r = anchor.el.getBoundingClientRect();
+      const y = scrollY + r.top + anchor.frac * r.height - innerHeight / 2;
+      scrollTo({ top: Math.max(0, y), behavior: 'instant' });
+    });
+  });
+  window.__lastH = innerHeight;
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
   /* Hero video: keep the photo if the clip is missing; stay still for reduced motion. */
@@ -390,7 +420,12 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
     const srcs = $$('source', hv);
     const drop = () => { hv.remove(); };
     srcs[srcs.length - 1].addEventListener('error', drop);
-    if (reduce) { hv.pause(); hv.removeAttribute('autoplay'); }
+    hv.muted = true;
+    const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
+    start();
+    ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach((ev) =>
+      addEventListener(ev, function once() { if (hv.paused) start(); removeEventListener(ev, once); }, { passive: true }));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
   }
 
   /* Signature move: the wordmark scales with scroll (travel under 8%). */

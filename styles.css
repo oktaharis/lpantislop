@@ -20,7 +20,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; scroll-snap-type: y proximity; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
@@ -43,6 +43,11 @@ main { position: relative; z-index: 1; background: var(--bg); }
 /* ---------- reveal ---------- */
 .js [data-reveal] { opacity: 0; transform: translateY(24px); transition: opacity .7s var(--ease), transform .7s var(--ease); transition-delay: var(--d, 0ms); }
 .js [data-reveal].in { opacity: 1; transform: none; }
+
+/* ---------- full-screen sections ---------- */
+.hero, .services, .work, .how, .faq, .contact, .foot { min-height: 100svh; scroll-snap-align: start; }
+.services, .how, .faq { display: flex; flex-direction: column; justify-content: center; padding-top: 12vh; padding-bottom: 12vh; }
+.work { display: flex; flex-direction: column; justify-content: center; }
 
 /* ---------- hero ---------- */
 .hero { min-height: 100svh; display: grid; grid-template-rows: 58svh 1fr; }
