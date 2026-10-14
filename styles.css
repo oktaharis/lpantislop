@@ -47,10 +47,12 @@ main { position: relative; z-index: 1; background: var(--bg); }
 /* ---------- hero ---------- */
 .hero { min-height: 100svh; display: grid; grid-template-rows: 58svh 1fr; }
 .hero-photo { position: relative; overflow: hidden; background: var(--surface); }
-.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; animation: drift 28s ease-in-out infinite alternate; }
+.hero-photo img, .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.hero-fallback { animation: drift 28s ease-in-out infinite alternate; }
+.hero-video { background: transparent; }
 @keyframes drift { from { transform: scale(1); } to { transform: scale(1.07); } }
 
-.nav { position: absolute; top: 0; right: 0; display: flex; gap: 28px; padding: 24px var(--m); background: rgba(229, 225, 216, .72); font-size: 14px; }
+.nav { position: absolute; z-index: 2; top: 0; right: 0; display: flex; gap: 28px; padding: 24px var(--m); background: rgba(229, 225, 216, .72); font-size: 14px; }
 .nav a { text-decoration: none; padding: 4px 0; transition: opacity .2s; }
 .nav a:hover { opacity: .55; }
 
@@ -206,7 +208,7 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .hero-photo img { animation: none; }
+  .hero-fallback { animation: none; }
   .js [data-reveal] { opacity: 1; transform: none; transition: none; }
   .wordmark, .foot-mark { will-change: auto; }
 }

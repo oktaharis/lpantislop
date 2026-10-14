@@ -18,6 +18,15 @@
   addEventListener('resize', refit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
+  /* Hero video: keep the photo if the clip is missing; stay still for reduced motion. */
+  const hv = $('.hero-video');
+  if (hv) {
+    const srcs = $$('source', hv);
+    const drop = () => { hv.remove(); };
+    srcs[srcs.length - 1].addEventListener('error', drop);
+    if (reduce) { hv.pause(); hv.removeAttribute('autoplay'); }
+  }
+
   /* Signature move: the wordmark scales with scroll (travel under 8%). */
   if (!reduce) {
     const hero = $('#top');

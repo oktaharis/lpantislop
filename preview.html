@@ -57,10 +57,12 @@ main { position: relative; z-index: 1; background: var(--bg); }
 /* ---------- hero ---------- */
 .hero { min-height: 100svh; display: grid; grid-template-rows: 58svh 1fr; }
 .hero-photo { position: relative; overflow: hidden; background: var(--surface); }
-.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; animation: drift 28s ease-in-out infinite alternate; }
+.hero-photo img, .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.hero-fallback { animation: drift 28s ease-in-out infinite alternate; }
+.hero-video { background: transparent; }
 @keyframes drift { from { transform: scale(1); } to { transform: scale(1.07); } }
 
-.nav { position: absolute; top: 0; right: 0; display: flex; gap: 28px; padding: 24px var(--m); background: rgba(229, 225, 216, .72); font-size: 14px; }
+.nav { position: absolute; z-index: 2; top: 0; right: 0; display: flex; gap: 28px; padding: 24px var(--m); background: rgba(229, 225, 216, .72); font-size: 14px; }
 .nav a { text-decoration: none; padding: 4px 0; transition: opacity .2s; }
 .nav a:hover { opacity: .55; }
 
@@ -216,7 +218,7 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .hero-photo img { animation: none; }
+  .hero-fallback { animation: none; }
   .js [data-reveal] { opacity: 1; transform: none; transition: none; }
   .wordmark, .foot-mark { will-change: auto; }
 }
@@ -228,7 +230,11 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
 <main>
   <header class="hero" id="top">
     <div class="hero-photo">
-      <img src="https://picsum.photos/id/1081/2400/1350" width="2400" height="1350" alt="Sudut gedung putih bertingkat menjulang ke langit biru pucat">
+      <img class="hero-fallback" src="https://picsum.photos/id/1081/2400/1350" width="2400" height="1350" alt="Sudut gedung putih bertingkat menjulang ke langit biru pucat">
+      <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="https://picsum.photos/id/1081/2400/1350" aria-hidden="true" tabindex="-1">
+        <source src="assets/hero.webm" type="video/webm">
+        <source src="assets/hero.mp4" type="video/mp4">
+      </video>
       <nav class="nav" aria-label="Utama">
         <a href="#layanan">Layanan</a>
         <a href="#karya">Karya</a>
@@ -378,6 +384,15 @@ details p { margin-top: 12px; font-size: 17px; max-width: 48ch; }
   refit();
   addEventListener('resize', refit);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+
+  /* Hero video: keep the photo if the clip is missing; stay still for reduced motion. */
+  const hv = $('.hero-video');
+  if (hv) {
+    const srcs = $$('source', hv);
+    const drop = () => { hv.remove(); };
+    srcs[srcs.length - 1].addEventListener('error', drop);
+    if (reduce) { hv.pause(); hv.removeAttribute('autoplay'); }
+  }
 
   /* Signature move: the wordmark scales with scroll (travel under 8%). */
   if (!reduce) {
