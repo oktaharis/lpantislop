@@ -7,19 +7,17 @@
 <meta name="description" content="JP Corps adalah mitra jasa untuk perusahaan: strategi, operasional, dan teknologi. Lihat layanan dan karya kami.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@800&family=Onest:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=e6dcd06">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=3">
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 
 <main>
+  <!-- HERO -->
   <header class="hero" id="top">
-    <div class="hero-photo">
-      <img class="hero-fallback" src="assets/hero-poster.jpg" width="1920" height="1080" alt="">
-      <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="assets/hero-poster.jpg" aria-hidden="true" tabindex="-1">
-        <source src="assets/hero.mp4?v=1" type="video/mp4">
-      </video>
+    <div class="topbar">
+      <a class="brand" href="#top">JP Corps</a>
       <nav class="nav" aria-label="Utama">
         <a href="#layanan">Layanan</a>
         <a href="#karya">Karya</a>
@@ -27,19 +25,38 @@
         <a href="#kontak">Kontak</a>
       </nav>
     </div>
-    <div class="hero-band">
-      <div class="hero-row">
-        <p class="hero-line">Mitra jasa untuk perusahaan yang ingin pekerjaannya berjalan rapi, dari strategi sampai sistem.</p>
+
+    <div class="hero-stage">
+      <div class="hero-copy">
+        <p class="side-label"><span>Mitra jasa</span></p>
+        <h1 class="hero-title">Pekerjaan perusahaan, berjalan rapi.</h1>
+        <p class="hero-text">Strategi, operasional, dan teknologi dari satu tim, dari rencana sampai hasilnya berdiri sendiri.</p>
         <a class="btn" href="#karya">Lihat karya</a>
       </div>
-      <h1 class="wordmark" id="wordmark" aria-label="JP Corps"><span>JP Corps</span></h1>
+
+      <div class="hero-art" aria-hidden="false">
+        <span class="big-num" aria-hidden="true">18</span>
+        <div class="circle c-main">
+          <img class="hero-fallback" src="assets/hero-poster.jpg" width="1920" height="1080" alt="">
+          <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="assets/hero-poster.jpg" aria-hidden="true" tabindex="-1">
+            <source src="assets/hero.mp4?v=1" type="video/mp4">
+          </video>
+        </div>
+        <div class="circle c-side"><img src="https://picsum.photos/id/1081/900/900" width="900" height="900" alt="Sudut gedung putih bertingkat menjulang ke langit biru pucat"></div>
+        <i class="vrule v1" aria-hidden="true"></i>
+        <i class="vrule v2" aria-hidden="true"></i>
+        <p class="cap cap-a">18 layanan<br>dalam tiga kelompok<br>Jakarta</p>
+        <p class="cap cap-b">Strategi dan riset<br>Operasional<br>Teknologi</p>
+      </div>
     </div>
   </header>
 
+  <!-- LAYANAN -->
   <section class="services" id="layanan" aria-labelledby="layanan-h">
-    <h2 id="layanan-h" class="section-title">Layanan kami</h2>
+    <h2 id="layanan-h" class="title">Tiga kelompok<br>layanan</h2>
     <div class="services-grid">
       <div class="group g1">
+        <div class="circle"><img src="https://picsum.photos/id/954/700/700" width="700" height="700" loading="lazy" alt="Celah di dinding putih dengan tangga putih"></div>
         <button class="group-name" type="button" data-filter="strategi">Strategi dan riset</button>
         <ul>
           <li data-desc="Memetakan pasar, pesaing, dan peluang sebelum satu rupiah pun dikeluarkan.">Pemetaan pasar</li>
@@ -52,6 +69,7 @@
         <p class="group-sum">Dasar keputusan yang kuat sebelum bergerak.</p>
       </div>
       <div class="group g2">
+        <div class="circle"><img src="https://picsum.photos/id/887/700/700" width="700" height="700" loading="lazy" alt="Fasad apartemen putih dengan balkon berulang"></div>
         <button class="group-name" type="button" data-filter="operasional">Operasional</button>
         <ul>
           <li data-desc="Menggambar ulang alur kerja supaya pekerjaan tidak menunggu antrean.">Perbaikan proses</li>
@@ -64,6 +82,7 @@
         <p class="group-sum">Pekerjaan harian yang lancar tanpa drama.</p>
       </div>
       <div class="group g3">
+        <div class="circle"><img src="https://picsum.photos/id/618/700/700" width="700" height="700" loading="lazy" alt="Atap kaca dan baja melengkung hitam putih"></div>
         <button class="group-name" type="button" data-filter="teknologi">Teknologi</button>
         <ul>
           <li data-desc="Membangun aplikasi internal yang sesuai cara kerja timmu.">Aplikasi internal</li>
@@ -75,50 +94,42 @@
         </ul>
         <p class="group-sum">Sistem yang dipakai, bukan sekadar dipasang.</p>
       </div>
-      <p class="desc" id="desc" aria-live="polite">Arahkan kursor ke satu layanan untuk membaca ringkasannya. Klik nama kelompok untuk menyorot karya yang terkait.</p>
     </div>
+    <p class="desc" id="desc" aria-live="polite">Arahkan kursor ke satu layanan untuk membaca ringkasannya. Klik nama kelompok untuk menyorot karya yang terkait.</p>
   </section>
 
+  <!-- KARYA -->
   <section class="work" id="karya" aria-labelledby="karya-h">
     <div class="work-head">
-      <h2 id="karya-h" class="work-title">Karya</h2>
+      <h2 id="karya-h" class="title">Karya</h2>
       <a class="underlined" href="#kontak">Minta daftar lengkap</a>
     </div>
     <p class="work-note" id="work-note">Menampilkan semua proyek. Pilih satu kelompok layanan di atas untuk menyorot proyeknya.</p>
     <div class="wall">
-      <div class="row r1">
-        <figure data-tags="strategi" style="--r:1.5"><img src="https://picsum.photos/id/942/900/600" width="900" height="600" loading="lazy" alt="Bangunan beton putih bersudut di bawah langit hitam"><figcaption><span>Pusat distribusi regional</span><span>2024</span></figcaption></figure>
-        <figure data-tags="operasional" style="--r:1.2"><img src="https://picsum.photos/id/887/720/600" width="720" height="600" loading="lazy" alt="Fasad apartemen putih dengan balkon berulang"><figcaption><span>Penataan gudang bertingkat</span><span>2023</span></figcaption></figure>
-        <figure data-tags="teknologi" style="--r:1.6"><img src="https://picsum.photos/id/618/960/600" width="960" height="600" loading="lazy" alt="Atap kaca dan baja melengkung hitam putih"><figcaption><span>Portal pemasok terpadu</span><span>2024</span></figcaption></figure>
-      </div>
-      <div class="row r2">
-        <figure data-tags="operasional" style="--r:1.7"><img src="https://picsum.photos/id/134/1020/600" width="1020" height="600" loading="lazy" alt="Jembatan rangka baja dilihat dari bawah di atas lengkung bata"><figcaption><span>Jalur logistik antarpulau</span><span>2022</span></figcaption></figure>
-        <figure data-tags="strategi" style="--r:1"><img src="https://picsum.photos/id/954/600/600" width="600" height="600" loading="lazy" alt="Celah di dinding putih dengan tangga putih"><figcaption><span>Peta ekspansi tiga kota</span><span>2023</span></figcaption></figure>
-      </div>
-      <div class="row r3">
-        <figure data-tags="teknologi" style="--r:1.3"><img src="https://picsum.photos/id/396/780/600" width="780" height="600" loading="lazy" alt="Terowongan eskalator panjang dengan langit-langit lengkung menyala"><figcaption><span>Sistem antrean pelanggan</span><span>2024</span></figcaption></figure>
-        <figure data-tags="strategi operasional" style="--r:1.8"><img src="https://picsum.photos/id/500/1080/600" width="1080" height="600" loading="lazy" alt="Gedung kaca menjulang ke awan dilihat dari bawah"><figcaption><span>Restrukturisasi kantor cabang</span><span>2023</span></figcaption></figure>
-        <figure data-tags="teknologi" style="--r:1.1"><img src="https://picsum.photos/id/101/660/600" width="660" height="600" loading="lazy" alt="Bangunan beton di bawah langit hijau pucat"><figcaption><span>Migrasi pusat data</span><span>2022</span></figcaption></figure>
-      </div>
-      <div class="row r4">
-        <figure data-tags="operasional teknologi" style="--r:2"><img src="https://picsum.photos/id/1067/1200/600" width="1200" height="600" loading="lazy" alt="Pandangan udara kota di tepi air saat matahari terbenam"><figcaption><span>Pemantauan armada kota</span><span>2024</span></figcaption></figure>
-        <figure data-tags="strategi" style="--r:1.4"><img src="https://picsum.photos/id/193/840/600" width="840" height="600" loading="lazy" alt="Bangunan batu gotik menghadap halaman rumput bergaris"><figcaption><span>Kajian akuisisi usaha</span><span>2022</span></figcaption></figure>
-      </div>
+      <figure data-tags="strategi" class="w1"><div class="circle"><img src="https://picsum.photos/id/942/800/800" width="800" height="800" loading="lazy" alt="Bangunan beton putih bersudut di bawah langit hitam"></div><figcaption><span>Pusat distribusi regional</span><span>2024</span></figcaption></figure>
+      <figure data-tags="operasional" class="w2"><div class="circle"><img src="https://picsum.photos/id/134/800/800" width="800" height="800" loading="lazy" alt="Jembatan rangka baja dilihat dari bawah di atas lengkung bata"></div><figcaption><span>Jalur logistik antarpulau</span><span>2022</span></figcaption></figure>
+      <figure data-tags="teknologi" class="w3"><div class="circle"><img src="https://picsum.photos/id/396/800/800" width="800" height="800" loading="lazy" alt="Terowongan eskalator panjang dengan langit-langit lengkung menyala"></div><figcaption><span>Sistem antrean pelanggan</span><span>2024</span></figcaption></figure>
+      <figure data-tags="strategi operasional" class="w4"><div class="circle"><img src="https://picsum.photos/id/500/800/800" width="800" height="800" loading="lazy" alt="Gedung kaca menjulang ke awan dilihat dari bawah"></div><figcaption><span>Restrukturisasi kantor cabang</span><span>2023</span></figcaption></figure>
+      <figure data-tags="operasional teknologi" class="w5"><div class="circle"><img src="https://picsum.photos/id/1067/800/800" width="800" height="800" loading="lazy" alt="Pandangan udara kota di tepi air saat matahari terbenam"></div><figcaption><span>Pemantauan armada kota</span><span>2024</span></figcaption></figure>
+      <figure data-tags="teknologi" class="w6"><div class="circle"><img src="https://picsum.photos/id/101/800/800" width="800" height="800" loading="lazy" alt="Bangunan beton di bawah langit hijau pucat"></div><figcaption><span>Migrasi pusat data</span><span>2022</span></figcaption></figure>
     </div>
     <p class="work-sample">Judul proyek di atas adalah contoh. Ganti dengan karya JP Corps yang sebenarnya.</p>
   </section>
 
+  <!-- CARA KERJA -->
   <section class="how" id="cara-kerja" aria-labelledby="cara-h">
+    <h2 id="cara-h" class="title">Cara kerja</h2>
     <ol class="steps">
-      <li class="s1"><h2 id="cara-h" class="step-line">Kamu bercerita.</h2><p>Kami datang, mendengar, dan mencatat masalah apa adanya, termasuk bagian yang tidak enak didengar.</p></li>
-      <li class="s2"><h3 class="step-line">Kami membongkar.</h3><p>Setiap bagian diperiksa dengan data, lalu disusun ulang menjadi rencana kerja yang jelas.</p></li>
-      <li class="s3"><h3 class="step-line">Kamu memilih.</h3><p>Kami ajukan pilihan beserta biaya dan risikonya. Keputusan tetap di tanganmu.</p></li>
-      <li class="s4"><h3 class="step-line">Kami jalankan.</h3><p>Tim kami masuk ke lapangan sampai hasilnya berdiri sendiri tanpa kami.</p></li>
+      <li class="s1"><span class="num" aria-hidden="true">1</span><h3 class="step-line">Kamu bercerita.</h3><p>Kami datang, mendengar, dan mencatat masalah apa adanya, termasuk bagian yang tidak enak didengar.</p></li>
+      <li class="s2"><span class="num" aria-hidden="true">2</span><h3 class="step-line">Kami membongkar.</h3><p>Setiap bagian diperiksa dengan data, lalu disusun ulang menjadi rencana kerja yang jelas.</p></li>
+      <li class="s3"><span class="num" aria-hidden="true">3</span><h3 class="step-line">Kamu memilih.</h3><p>Kami ajukan pilihan beserta biaya dan risikonya. Keputusan tetap di tanganmu.</p></li>
+      <li class="s4"><span class="num" aria-hidden="true">4</span><h3 class="step-line">Kami jalankan.</h3><p>Tim kami masuk ke lapangan sampai hasilnya berdiri sendiri tanpa kami.</p></li>
     </ol>
   </section>
 
+  <!-- FAQ -->
   <section class="faq" id="tanya" aria-labelledby="faq-h">
-    <h2 id="faq-h" class="faq-title">Sering ditanyakan</h2>
+    <h2 id="faq-h" class="title">Sering<br>ditanyakan</h2>
     <div class="faq-list">
       <details><summary>Perusahaan seperti apa yang kalian layani?<i aria-hidden="true"></i></summary><p>Perusahaan menengah sampai besar yang butuh mitra untuk satu proyek jelas atau pendampingan jangka panjang. Ukuran dan industrinya fleksibel.</p></details>
       <details><summary>Bisakah memesan satu layanan saja?<i aria-hidden="true"></i></summary><p>Bisa. Banyak klien mulai dari satu kelompok, misalnya riset, lalu menambah yang lain bila memang perlu.</p></details>
@@ -129,6 +140,7 @@
     </div>
   </section>
 
+  <!-- KONTAK -->
   <section class="contact" id="kontak" aria-labelledby="kontak-h">
     <h2 id="kontak-h" class="contact-line">Ceritakan pekerjaan yang ingin kamu rapikan.</h2>
     <a class="email" href="mailto:halo@jpcorps.id?subject=Konsultasi%20dengan%20JP%20Corps&amp;body=Halo%20JP%20Corps%2C%0A%0ANama%20perusahaan%3A%20%0ALayanan%20yang%20diminati%3A%20%0ASingkat%20tentang%20kebutuhan%3A%20">halo@<wbr>jpcorps.id</a>
@@ -146,10 +158,10 @@
   </div>
   <div class="foot-bottom">
     <p class="foot-mark" id="footmark" aria-hidden="true"><span>JP Corps</span></p>
-    <p class="foot-legal">© 2026 JP Corps. Seluruh hak dilindungi. Foto: Julien Moreau, Carl Nenzen Loven, Roman Kraft, Mika Ruusunen, Charlie Foster, Todd Quackenbush, Sam X, Greg Shield, Christian Bardenhorst, Kevin Young, Vadim Sherbakov melalui Unsplash.</p>
+    <p class="foot-legal">© 2026 JP Corps. Seluruh hak dilindungi. Foto contoh melalui Unsplash.</p>
   </div>
 </footer>
 
-<script src="main.js?v=e6dcd06"></script>
+<script src="main.js?v=3"></script>
 </body>
 </html>

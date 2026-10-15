@@ -1,23 +1,21 @@
 (() => {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  /* Fit a wordmark to the width of its container (desktop: one line). */
+  /* Fit the footer wordmark to its container (desktop: one line). */
+  const fm = $('#footmark');
   function fit(el) {
-    const span = el.firstElementChild;
-    if (matchMedia('(max-width: 760px)').matches) { el.style.fontSize = ''; return; }
-    const target = el.parentElement.clientWidth - parseFloat(getComputedStyle(el.parentElement).paddingLeft) * 2;
+    if (matchMedia('(max-width: 900px)').matches) { el.style.fontSize = ''; return; }
+    const target = el.parentElement.clientWidth;
     el.style.fontSize = '100px';
-    const w = span.offsetWidth;
-    el.style.fontSize = Math.floor((100 * target) / w) + 'px';
+    el.style.fontSize = Math.floor((100 * target) / el.firstElementChild.offsetWidth) + 'px';
   }
-  const wm = $('#wordmark'), fm = $('#footmark');
-  const refit = () => { fit(wm); fit(fm); };
+  const refit = () => fit(fm);
   refit();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
   addEventListener('resize', refit);
 
-  /* Zoom keeps you on the same section: remember where we are, restore after a resize. */
+  /* Zoom keeps you on the same section: remember it, restore after a resize. */
   const panels = $$('main > header, main > section, .foot');
   let anchor = { el: panels[0], frac: 0 };
   const track = () => {
@@ -27,28 +25,25 @@
       if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
     }
   };
-  let trackTick = false;
-  addEventListener('scroll', () => { if (!trackTick) { trackTick = true; requestAnimationFrame(() => { trackTick = false; track(); }); } }, { passive: true });
+  let tt = false;
+  addEventListener('scroll', () => { if (!tt) { tt = true; requestAnimationFrame(() => { tt = false; track(); }); } }, { passive: true });
   track();
-  let lastW = innerWidth;
+  let lastW = innerWidth, lastH = innerHeight;
   addEventListener('resize', () => {
-    if (innerWidth === lastW && innerHeight === window.__lastH) return;
-    lastW = innerWidth; window.__lastH = innerHeight;
+    if (innerWidth === lastW && innerHeight === lastH) return;
+    lastW = innerWidth; lastH = innerHeight;
     requestAnimationFrame(() => {
       const r = anchor.el.getBoundingClientRect();
       const y = scrollY + r.top + anchor.frac * r.height - innerHeight / 2;
       scrollTo({ top: Math.max(0, y), behavior: 'instant' });
     });
   });
-  window.__lastH = innerHeight;
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
 
-  /* Hero video: keep the photo if the clip is missing; stay still for reduced motion. */
+  /* Hero video: always play (muted); keep the poster if the clip is missing. */
   const hv = $('.hero-video');
   if (hv) {
     const srcs = $$('source', hv);
-    const drop = () => { hv.remove(); };
-    srcs[srcs.length - 1].addEventListener('error', drop);
+    srcs[srcs.length - 1].addEventListener('error', () => hv.remove());
     hv.muted = true;
     const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
     start();
@@ -57,38 +52,11 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
   }
 
-  /* Signature move: the wordmark scales with scroll (travel under 8%). */
-  if (!reduce) {
-    const hero = $('#top');
-    const foot = $('.foot');
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = innerHeight;
-      const p = Math.min(1, Math.max(0, scrollY / (vh * 0.9)));
-      wm.style.transform = `scale(${(1 - 0.07 * p).toFixed(4)})`;
-      const fr = foot.getBoundingClientRect();
-      const q = Math.min(1, Math.max(0, 1 - fr.top / vh));
-      fm.style.transform = `scale(${(0.94 + 0.06 * q).toFixed(4)})`;
-    };
-    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-    update();
-  }
-
   /* Staggered entrances: heading, then text, then pictures. */
-  const targets = [
-    ['.services .section-title', 0], ['.group', 80], ['.desc', 160],
-    ['.work-title', 0], ['.work-head .underlined', 80], ['.work-note', 120], ['.row figure', 70],
-    ['.step-line', 0], ['.steps p', 90],
-    ['.faq-title', 0], ['details', 70],
-    ['.contact-line', 0], ['.email', 90], ['.foot-cols ul', 70],
-  ];
-  targets.forEach(([sel, step]) => {
-    $$(sel).forEach((el, i) => {
-      el.setAttribute('data-reveal', '');
-      el.style.setProperty('--d', (sel === '.group' || sel === '.row figure' || sel === 'details' || sel === '.foot-cols ul' ? i * step : step) + 'ms');
-    });
-  });
+  const stagger = ['.group', '.wall figure', '.faq-list details', '.foot-cols ul', '.steps li'];
+  const single = ['.hero-title', '.hero-text', '.hero .btn', '.hero-art', '.title', '.desc', '.work-note', '.contact-line', '.email'];
+  single.forEach((sel, k) => $$(sel).forEach((el) => { el.setAttribute('data-reveal', ''); el.style.setProperty('--delay', (sel.startsWith('.hero') ? k * 90 : 0) + 'ms'); }));
+  stagger.forEach((sel) => $$(sel).forEach((el, i) => { el.setAttribute('data-reveal', ''); el.style.setProperty('--delay', i * 80 + 'ms'); }));
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
   }, { threshold: 0.12 });
@@ -110,6 +78,7 @@
   const wall = $('.wall');
   const note = $('#work-note');
   const baseNote = note.textContent;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const buttons = $$('.group-name');
   buttons.forEach((b) => {
     b.setAttribute('aria-pressed', 'false');
