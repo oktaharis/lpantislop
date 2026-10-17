@@ -12,7 +12,13 @@ import {
   RingGeometry, VideoTexture, TextureLoader, SRGBColorSpace, TorusGeometry, CanvasTexture,
   BufferGeometry, Float32BufferAttribute, Points, PointsMaterial, DoubleSide, Group, MathUtils,
   RepeatWrapping, MirroredRepeatWrapping, EquirectangularReflectionMapping, ACESFilmicToneMapping,
+  PCFShadowMap, IcosahedronGeometry, WebGLRenderTarget, HalfFloatType, Vector2,
 } from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
@@ -207,7 +213,9 @@ export function startWorld() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.92;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFShadowMap;
 
   const scene = new Scene();
   scene.background = new Color(C.bg);
@@ -222,10 +230,19 @@ export function startWorld() {
   document.body.appendChild(css.domElement);
   const cssScene = new Scene();
 
-  scene.add(new HemisphereLight(0xffffff, new Color(C.lav2), 1.15));
-  const sun = new DirectionalLight(0xffffff, 1.9);
-  sun.position.set(50, 90, 40);
+  scene.add(new HemisphereLight(0xffffff, new Color(C.lav2), 0.85));
+  const sun = new DirectionalLight(0xffffff, 2.0);
+  const SUN_OFFSET = new Vector3(45, 80, 30);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+  sun.shadow.camera.left = -75; sun.shadow.camera.right = 75;
+  sun.shadow.camera.top = 75; sun.shadow.camera.bottom = -75;
+  sun.shadow.camera.near = 10; sun.shadow.camera.far = 260;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.05;
+  sun.shadow.radius = 4;
   scene.add(sun);
+  scene.add(sun.target);
   const rim = new DirectionalLight(new Color(C.lav), 0.5);
   rim.position.set(-40, 30, -60);
   scene.add(rim);
@@ -277,7 +294,7 @@ export function startWorld() {
   // ---- ground --------------------------------------------------------------
   const ground = new Mesh(
     new PlaneGeometry(1000, 1000),
-    new MeshStandardMaterial({ color: C.white, roughness: 0.95, metalness: 0 }),
+    new MeshStandardMaterial({ color: '#e7e5ef', roughness: 0.95, metalness: 0 }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, 0, -80);
@@ -682,7 +699,7 @@ export function startWorld() {
     });
     if (glassGeos.length) {
       scene.add(new Mesh(mergeGeometries(glassGeos, false), new MeshStandardMaterial({
-        color: C.lav2, roughness: 0.07, metalness: 0.92, envMapIntensity: 1.5,
+        color: '#dcd7f0', roughness: 0.14, metalness: 0.72, envMapIntensity: 1.15,
       })));
     }
     if (trimGeos.length) {
@@ -725,23 +742,23 @@ export function startWorld() {
           .addScaledVector(side, -(9.5 + r2() * 3) * flip)
           .addScaledVector(tan, (n - 0.5) * 5 + r2() * 2);
         tFoot.y = 0;
-        const hT = 1.6 + r2() * 1.1;
-        const trunk = new CylinderGeometry(0.14, 0.24, hT, 7);
-        trunk.translate(0, hT / 2, 0);
+        const hT = 2.2 + r2() * 1.2;
+        const trunk = new CylinderGeometry(0.09, 0.16, hT + 0.6, 7);
+        trunk.translate(0, (hT + 0.6) / 2, 0);
         place(trunkGeos, trunk, tFoot);
-        const layers = 2 + Math.floor(r2() * 2);
-        for (let k = 0; k < layers; k++) {
-          const rr = 1.5 - k * 0.38 + r2() * 0.22;
-          const cone = new ConeGeometry(rr, 1.9, 9);
-          cone.translate(0, hT + k * 0.9 + 0.8, 0);
-          place(leafGeos, cone, tFoot, r2() * 3);
+        const blobs = 3 + Math.floor(r2() * 3);
+        for (let k = 0; k < blobs; k++) {
+          const rr = 0.8 + r2() * 0.6;
+          const blob = new IcosahedronGeometry(rr, 2);
+          blob.translate((r2() - 0.5) * 1.3, hT + 0.6 + r2() * 1.2, (r2() - 0.5) * 1.3);
+          place(leafGeos, blob, tFoot, r2() * 3);
         }
       }
     }
     if (poleGeos.length) scene.add(new Mesh(mergeGeometries(poleGeos, false), new MeshStandardMaterial({ color: C.ink, roughness: 0.45, metalness: 0.55 })));
-    if (headGeos.length) scene.add(new Mesh(mergeGeometries(headGeos, false), new MeshStandardMaterial({ color: C.red, roughness: 0.35, metalness: 0.3, emissive: new Color(C.red), emissiveIntensity: 0.3 })));
-    if (trunkGeos.length) scene.add(new Mesh(mergeGeometries(trunkGeos, false), new MeshStandardMaterial({ color: '#6c5b4b', roughness: 0.9 })));
-    if (leafGeos.length) scene.add(new Mesh(mergeGeometries(leafGeos, false), new MeshStandardMaterial({ color: C.leaf, roughness: 0.85, flatShading: true })));
+    if (headGeos.length) scene.add(new Mesh(mergeGeometries(headGeos, false), new MeshStandardMaterial({ color: C.red, roughness: 0.35, metalness: 0.3, emissive: new Color(C.red), emissiveIntensity: 2.4 })));
+    if (trunkGeos.length) scene.add(new Mesh(mergeGeometries(trunkGeos, false), new MeshStandardMaterial({ color: '#5b4f63', roughness: 0.9 })));
+    if (leafGeos.length) scene.add(new Mesh(mergeGeometries(leafGeos, false), new MeshStandardMaterial({ color: '#a9c7b4', roughness: 0.92 })));
   }
 
   // ---- drifting particles ----------------------------------------------------
@@ -758,6 +775,30 @@ export function startWorld() {
     geo.setAttribute('position', new Float32BufferAttribute(pos, 3));
     scene.add(new Points(geo, new PointsMaterial({ color: C.ink, size: 0.18, transparent: true, opacity: 0.3 })));
   }
+
+  // ---- shadows on everything solid --------------------------------------------
+  scene.traverse((o) => {
+    if (!o.isMesh || o.material.isMeshBasicMaterial) return;
+    o.receiveShadow = true;
+    o.castShadow = o !== ground;
+  });
+
+  // ---- post-processing ------------------------------------------------------------
+  const target = new WebGLRenderTarget(innerWidth, innerHeight, { type: HalfFloatType, samples: 4 });
+  const composer = new EffectComposer(renderer, target);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(innerWidth, innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  let gtao = null;
+  if (!small) {
+    gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
+    gtao.updateGtaoMaterial({ radius: 2.2, distanceExponent: 1.4, thickness: 2, scale: 1.1, samples: 12 });
+    gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+    gtao.blendIntensity = 0.9;
+    composer.addPass(gtao);
+  }
+  composer.addPass(new UnrealBloomPass(new Vector2(innerWidth, innerHeight), 0.35, 0.4, 2.6));
+  composer.addPass(new OutputPass());
 
   // ---- scroll to path position ----------------------------------------------
   const DWELL = 0.42;
@@ -795,6 +836,7 @@ export function startWorld() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight, false);
+    composer.setSize(innerWidth, innerHeight);
     css.setSize(innerWidth, innerHeight);
     layoutCards();
     measure();
@@ -859,7 +901,10 @@ export function startWorld() {
       }
     });
 
-    renderer.render(scene, camera);
+    // the sun's shadow box travels with the camera
+    sun.position.copy(camPos).add(SUN_OFFSET);
+    sun.target.position.copy(look);
+    composer.render();
     css.render(cssScene, camera);
     requestAnimationFrame(frame);
   }
