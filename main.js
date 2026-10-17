@@ -1,49 +1,11 @@
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* Fit the footer wordmark to its container (desktop: one line). */
-  const fm = $('#footmark');
-  function fit(el) {
-    if (matchMedia('(max-width: 900px)').matches) { el.style.fontSize = ''; return; }
-    const target = el.parentElement.clientWidth;
-    el.style.fontSize = '100px';
-    el.style.fontSize = Math.floor((100 * target) / el.firstElementChild.offsetWidth) + 'px';
-  }
-  const refit = () => fit(fm);
-  refit();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
-  addEventListener('resize', refit);
-
-  /* Zoom keeps you on the same section: remember it, restore after a resize. */
-  const panels = $$('main > header, main > section, .foot');
-  let anchor = { el: panels[0], frac: 0 };
-  const track = () => {
-    const mid = innerHeight / 2;
-    for (const el of panels) {
-      const r = el.getBoundingClientRect();
-      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
-    }
-  };
-  let tt = false;
-  addEventListener('scroll', () => { if (!tt) { tt = true; requestAnimationFrame(() => { tt = false; track(); }); } }, { passive: true });
-  track();
-  let lastW = innerWidth, lastH = innerHeight;
-  addEventListener('resize', () => {
-    if (innerWidth === lastW && innerHeight === lastH) return;
-    lastW = innerWidth; lastH = innerHeight;
-    requestAnimationFrame(() => {
-      const r = anchor.el.getBoundingClientRect();
-      const y = scrollY + r.top + anchor.frac * r.height - innerHeight / 2;
-      scrollTo({ top: Math.max(0, y), behavior: 'instant' });
-    });
-  });
-
-  /* Hero video: always play (muted); keep the poster if the clip is missing. */
-  const hv = $('.hero-video');
+  /* Hero video feeds the 3D disc: keep it playing (muted). */
+  const hv = $('#world-video');
   if (hv) {
-    const srcs = $$('source', hv);
-    srcs[srcs.length - 1].addEventListener('error', () => hv.remove());
     hv.muted = true;
     const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
     start();
@@ -52,47 +14,87 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
   }
 
-  /* Staggered entrances: heading, then text, then pictures. */
-  const stagger = ['.group', '.wall figure', '.faq-list details', '.foot-cols ul', '.steps li'];
-  const single = ['.hero-title', '.hero-text', '.hero .btn', '.hero-art', '.title', '.desc', '.work-note', '.contact-line', '.email'];
-  single.forEach((sel, k) => $$(sel).forEach((el) => { el.setAttribute('data-reveal', ''); el.style.setProperty('--delay', (sel.startsWith('.hero') ? k * 90 : 0) + 'ms'); }));
-  stagger.forEach((sel) => $$(sel).forEach((el, i) => { el.setAttribute('data-reveal', ''); el.style.setProperty('--delay', i * 80 + 'ms'); }));
+  /* Panels rise in as their stop arrives. */
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  $$('[data-reveal]').forEach((el) => io.observe(el));
+  }, { threshold: 0.15 });
+  $$('.panel, .hero-copy').forEach((el) => io.observe(el));
+  $$('.hero-copy > *').forEach((el, i) => el.style.setProperty('--delay', i * 110 + 'ms'));
 
-  /* The live thing: hover a service to read it, click a group to light up its projects. */
+  /* Rail: which stop are we at, and how far along the road. */
+  const stops = $$('[data-stop]');
+  const links = $$('.rail a');
+  const fill = $('#rail-fill');
+  let tick = false;
+  const updateRail = () => {
+    tick = false;
+    const mid = scrollY + innerHeight * 0.5;
+    let active = stops[0];
+    stops.forEach((s) => { if (s.offsetTop <= mid) active = s; });
+    links.forEach((a) => a.classList.toggle('active', a.dataset.for === active.id));
+    const max = document.documentElement.scrollHeight - innerHeight;
+    if (fill) fill.style.height = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
+  };
+  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(updateRail); } }, { passive: true });
+  updateRail();
+
+  /* Zoom keeps you on the same stop: remember it, restore after a resize. */
+  let anchor = { el: stops[0], frac: 0 };
+  const track = () => {
+    const mid = innerHeight / 2;
+    for (const el of stops) {
+      const r = el.getBoundingClientRect();
+      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
+    }
+  };
+  addEventListener('scroll', () => requestAnimationFrame(track), { passive: true });
+  track();
+  let lastW = innerWidth, lastH = innerHeight;
+  addEventListener('resize', () => {
+    if (innerWidth === lastW && innerHeight === lastH) return;
+    lastW = innerWidth; lastH = innerHeight;
+    requestAnimationFrame(() => {
+      const r = anchor.el.getBoundingClientRect();
+      scrollTo({ top: Math.max(0, scrollY + r.top + anchor.frac * r.height - innerHeight / 2), behavior: 'instant' });
+    });
+  });
+
+  /* Services: hover reads, click lights up the matching work (page and world). */
   const desc = $('#desc');
-  const defaultDesc = desc.textContent;
+  const defaultDesc = desc ? desc.textContent : '';
   $$('.group li').forEach((li) => {
     li.tabIndex = 0;
-    const show = () => { desc.textContent = li.dataset.desc; };
-    const hide = () => { desc.textContent = defaultDesc; };
+    const show = () => { if (desc) desc.textContent = li.dataset.desc; };
+    const hide = () => { if (desc) desc.textContent = defaultDesc; };
     li.addEventListener('mouseenter', show);
     li.addEventListener('focus', show);
     li.addEventListener('mouseleave', hide);
     li.addEventListener('blur', hide);
   });
 
-  const wall = $('.wall');
+  const list = $('.work-list');
   const note = $('#work-note');
-  const baseNote = note.textContent;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const baseNote = note ? note.textContent : '';
   const buttons = $$('.group-name');
   buttons.forEach((b) => {
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
       const on = b.getAttribute('aria-pressed') !== 'true';
       buttons.forEach((x) => x.setAttribute('aria-pressed', 'false'));
-      $$('.wall figure').forEach((f) => f.classList.remove('match'));
-      if (!on) { wall.classList.remove('filtering'); note.textContent = baseNote; return; }
+      $$('.work-list li').forEach((li) => li.classList.remove('match'));
+      if (!on) {
+        list.classList.remove('filtering');
+        note.textContent = baseNote;
+        if (window.jpWorld) window.jpWorld.highlight(null);
+        return;
+      }
       b.setAttribute('aria-pressed', 'true');
       const tag = b.dataset.filter;
       let n = 0;
-      $$('.wall figure').forEach((f) => { if (f.dataset.tags.split(' ').includes(tag)) { f.classList.add('match'); n++; } });
-      wall.classList.add('filtering');
-      note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk menampilkan semua.`;
+      $$('.work-list li').forEach((li) => { if (li.dataset.tags.split(' ').includes(tag)) { li.classList.add('match'); n++; } });
+      list.classList.add('filtering');
+      note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk semua.`;
+      if (window.jpWorld) window.jpWorld.highlight(tag);
       $('#karya').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     });
   });
