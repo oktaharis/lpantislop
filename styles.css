@@ -143,6 +143,46 @@ details p { padding: 0 0 16px; color: var(--muted); font-size: 15px; }
   .scroll-hint { display: none; }
 }
 
+/* ---------- world mode: the text floats in the 3D world ---------- */
+.world-layer { position: fixed !important; inset: 0; z-index: 2; pointer-events: none; }
+.world-card { will-change: transform, opacity; color: var(--ink);
+  text-shadow: 0 0 2px var(--bg), 0 0 8px var(--bg), 0 0 18px var(--bg), 0 0 32px var(--bg); }
+.world-card .panel, .world-card .hero-copy, .world-card .hero-copy > * {
+  opacity: 1 !important; transform: none !important; transition: none !important; }
+.world-card .panel { width: 100%; background: rgba(243, 243, 244, .58); -webkit-backdrop-filter: none; backdrop-filter: none; padding: clamp(20px, 2.4vw, 34px); }
+.world-card .panel::before { display: none; }
+.world-card .hero-copy { max-width: none; background: rgba(243, 243, 244, .5); padding: clamp(20px, 2.4vw, 34px); }
+.world-card .title { font-size: clamp(2rem, 1.3rem + 2.2vw, 3.2rem); }
+.world-card .group li, .world-card .steps p, .world-card details p, .world-card .work-list em,
+.world-card .fine, .world-card .work-note, .world-card .contact-meta { color: #3d3760; }
+.world-card .btn, .world-card .btn * { text-shadow: none; }
+.world-card .work-list li + li { box-shadow: inset 0 1px 0 rgba(42, 16, 119, .18); }
+.world-card .faq-list details { box-shadow: inset 0 -1px 0 rgba(42, 16, 119, .18); }
+.world-card-hero .hero-title { font-size: clamp(4rem, 2rem + 8vw, 9rem); }
+
+/* each stop gets room to read before the camera moves on */
+.world-text .stop { min-height: 170svh; padding: 0; align-items: flex-start; }
+.world-text .stop-hero { min-height: 150svh; }
+.world-text #kontak { min-height: 120svh; }
+.world-text .scroll-hint { position: fixed; z-index: 3; }
+.world-text.scrolled .scroll-hint { opacity: 0; transition: opacity .4s; }
+
+@media (max-width: 900px) {
+  .world-card { text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 14px var(--bg); }
+  .world-card .panel { background: rgba(243, 243, 244, .62); padding: 18px 16px; }
+  .world-card .title { font-size: 1.7rem; margin-bottom: 16px; }
+  .world-card-hero .hero-title { font-size: 4.2rem; }
+  .world-card .services { gap: 14px; }
+  .world-card .group ul { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+  .world-card .group li { font-size: 14px; padding: 1px 0; }
+  .world-card .group-name { padding-bottom: 4px; font-size: 1.05rem; }
+  .world-card .desc { display: none; }
+  .world-card .work-list li { grid-template-columns: 1fr auto; padding: 9px 0; }
+  .world-card .work-list em { display: none; }
+  .world-card .steps { gap: 12px; }
+  .world-card .email { font-size: 2.1rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .js .panel, .js .hero-copy > * { opacity: 1; transform: none; transition: none; }

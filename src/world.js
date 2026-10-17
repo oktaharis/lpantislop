@@ -15,6 +15,14 @@ import {
 } from 'three';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+
+// Optional generated assets (see ASSET-PROMPTS.md). assets/gen/manifest.json lists what exists,
+// so missing files never cause 404s; anything missing falls back to the procedural version.
+const manifestReady = fetch('assets/gen/manifest.json', { cache: 'no-cache' })
+  .then((r) => (r.ok ? r.json() : {}))
+  .catch(() => ({}));
+const loadTex = (url, done) => new TextureLoader().load(url, (tex) => { tex.colorSpace = SRGBColorSpace; done(tex); }, undefined, () => {});
 
 const C = {
   bg: '#f3f3f4', ink: '#2a1077', red: '#e8463f', lav: '#e9e5f7', lav2: '#cfc6ea',
@@ -76,13 +84,34 @@ function facadeTexture(seed) {
   return tex;
 }
 
-function discTexture({ title, sub, bg, fg, accent }) {
+function discTexture({ title, sub, bg, fg, accent, img }) {
   const s = 512;
   const cv = document.createElement('canvas');
   cv.width = cv.height = s;
   const g = cv.getContext('2d');
+  g.save();
+  g.beginPath(); g.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2); g.clip();
   g.fillStyle = bg;
-  g.beginPath(); g.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2); g.fill();
+  g.fillRect(0, 0, s, s);
+  if (img) {
+    // cover-crop the photo into the circle, then a band for the title
+    const k = Math.max(s / img.width, s / img.height);
+    g.drawImage(img, (s - img.width * k) / 2, (s - img.height * k) / 2, img.width * k, img.height * k);
+    g.fillStyle = 'rgba(42,16,119,0.82)';
+    g.fillRect(0, s * 0.62, s, s * 0.38);
+    g.restore();
+    g.fillStyle = '#ffffff';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = '700 38px Poppins, "Segoe UI", sans-serif';
+    g.fillText(title.length > 26 ? title.slice(0, 25) + '…' : title, s / 2, s * 0.73);
+    if (sub) { g.fillStyle = accent; g.font = '600 30px Inter, "Segoe UI", sans-serif'; g.fillText(sub, s / 2, s * 0.83); }
+    const t2 = new CanvasTexture(cv);
+    t2.colorSpace = SRGBColorSpace;
+    t2.anisotropy = 4;
+    return t2;
+  }
+  g.restore();
   g.fillStyle = fg;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
@@ -164,6 +193,13 @@ export function startWorld() {
 
   const camera = new PerspectiveCamera(small ? 66 : 55, innerWidth / innerHeight, 0.1, 700);
 
+  // The page's text lives in the world too: real DOM placed in 3D with CSS transforms.
+  const css = new CSS3DRenderer();
+  css.setSize(innerWidth, innerHeight);
+  css.domElement.className = 'world-layer';
+  document.body.appendChild(css.domElement);
+  const cssScene = new Scene();
+
   scene.add(new HemisphereLight(0xffffff, new Color(C.lav2), 1.15));
   const sun = new DirectionalLight(0xffffff, 1.9);
   sun.position.set(50, 90, 40);
@@ -178,6 +214,13 @@ export function startWorld() {
     scene.environment = tex;
     scene.environmentIntensity = 0.5;
   }, undefined, () => {});
+
+  manifestReady.then((m) => {
+    if (m.sky) loadTex('assets/gen/' + m.sky, (tex) => {
+      tex.mapping = EquirectangularReflectionMapping;
+      scene.background = tex;
+    });
+  });
 
   // ---- the path ------------------------------------------------------------
   const curve = new CatmullRomCurve3([
@@ -269,7 +312,7 @@ export function startWorld() {
   // Stop 0: the hero video on a giant disc, split by two lines
   {
     const t = stopT[0];
-    const pos = ahead(t, 40, small ? 0 : 12, 1);
+    const pos = ahead(t, 40, small ? 0 : 12, small ? 8 : 1);
     const g = new Group();
     g.position.copy(pos);
     const video = document.getElementById('world-video');
@@ -355,6 +398,19 @@ export function startWorld() {
         accent: C.red,
       });
       const m = new Mesh(new CircleGeometry(2.4, 64), new MeshBasicMaterial({ map: tex, transparent: true, fog: false }));
+      manifestReady.then((man) => {
+        const file = man.projects && man.projects[i];
+        if (!file) return;
+        const im = new Image();
+        im.onload = () => {
+          m.material.map = discTexture({
+            title: li.dataset.name || li.textContent.trim(), sub: li.dataset.year || '',
+            bg: C.ink, fg: C.white, accent: C.red, img: im,
+          });
+          m.material.needsUpdate = true;
+        };
+        im.src = 'assets/gen/' + file;
+      });
       m.position.copy(centre)
         .addScaledVector(side, (r - 1) * 5.4)
         .add(new Vector3(0, (0.5 - row) * 5.4, 0));
@@ -450,6 +506,69 @@ export function startWorld() {
     scene.add(gate);
   }
 
+  // ---- the page text, placed in the world --------------------------------------
+  const TEXT_D = 18;            // how far ahead of the camera a stop's text floats
+  const cards = [];
+  stops.forEach((stop, i) => {
+    const el = stop.querySelector('.panel, .hero-copy');
+    if (!el) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'world-card' + (stop.id === 'top' ? ' world-card-hero' : '');
+    wrap.appendChild(el);
+    const obj = new CSS3DObject(wrap);
+    cssScene.add(obj);
+    cards.push({
+      obj, wrap, st: stopT[i],
+      side: small ? 'center' : (stop.dataset.side || 'left'),
+      wide: stop.hasAttribute('data-wide'),
+      first: i === 0, last: i === stops.length - 1,
+    });
+  });
+  const tanHalf = () => Math.tan(MathUtils.degToRad(camera.fov / 2));
+  // world position for a card whose centre should land at (ndcX, ndcY) on screen at its stop.
+  // The camera looks slightly down (1.5 units over 20), so the card drops by the same slope.
+  const cardRef = (c) => c.st + (c.last ? 0 : 0.005);   // middle of the reading pause
+  const cardPos = (c, ndcX, ndcY) => {
+    const { p, tan, side } = frameAt(cardRef(c));
+    const halfH = TEXT_D * tanHalf();
+    const x = ndcX * halfH * camera.aspect;
+    const y = -TEXT_D * (1.5 / 20) + ndcY * halfH;
+    return p.clone().addScaledVector(tan, TEXT_D).addScaledVector(side, x).add(new Vector3(0, y, 0));
+  };
+  // keep buildings out from behind the text
+  cards.forEach((c) => clearSight(c.st, cardPos(c, c.side === 'left' ? -0.45 : c.side === 'right' ? 0.45 : 0, 0), 8));
+
+  const layoutCards = () => {
+    const focal = (innerHeight / 2) / tanHalf();
+    cards.forEach((c) => {
+      const w = small ? innerWidth * 0.9
+        : c.wide ? Math.min(820, innerWidth * 0.56)
+        : c.first ? Math.min(600, innerWidth * 0.44)
+        : Math.min(500, innerWidth * 0.38);
+      c.wrap.style.width = Math.round(w) + 'px';
+      const h = c.wrap.offsetHeight || 1;
+      const topRoom = small ? 76 : 96;     // keep clear of the top bar
+      const fit = Math.min(1, (innerHeight - topRoom - 32) / h);
+      const half = innerWidth / 2;
+      const margin = small ? innerWidth * 0.05 : Math.max(56, innerWidth * 0.06);
+      const rail = small ? 0 : 100;
+      const ww = w * fit;
+      let ndcX = 0;
+      if (c.side === 'left') ndcX = -1 + (margin + ww / 2) / half;
+      if (c.side === 'right') ndcX = 1 - (margin + rail + ww / 2) / half;
+      // vertical: centred in the room below the top bar; on phones the hero sits low under the disc
+      const hh = h * fit;
+      let centreY = topRoom + (innerHeight - topRoom - hh) / 2 + hh / 2;
+      if (small && c.first) centreY = innerHeight - 28 - hh / 2;
+      const ndcY = 1 - (2 * centreY) / innerHeight;
+      const { p } = frameAt(cardRef(c));
+      c.obj.position.copy(cardPos(c, ndcX, ndcY));
+      c.obj.lookAt(p);
+      // at its stop, one CSS pixel of the card is one screen pixel (times fit)
+      c.obj.scale.setScalar((fit * TEXT_D) / focal);
+    });
+  };
+
   // ---- the city: buildings with facades, roof plant, lights and trees -------
   {
     const rand = rng(20261017);
@@ -513,11 +632,24 @@ export function startWorld() {
       placed++;
     }
 
+    const stoneMats = [];
     stoneGeos.forEach((bucket, i) => {
       if (!bucket.length) return;
-      scene.add(new Mesh(mergeGeometries(bucket, false), new MeshStandardMaterial({
-        map: facade[i], roughness: 0.78, metalness: 0.05, envMapIntensity: 0.5,
-      })));
+      const mat = new MeshStandardMaterial({ map: facade[i], roughness: 0.78, metalness: 0.05, envMapIntensity: 0.5 });
+      stoneMats[i] = mat;
+      scene.add(new Mesh(mergeGeometries(bucket, false), mat));
+    });
+    manifestReady.then((m) => {
+      (m.facades || []).forEach((file, i) => {
+        const mat = stoneMats[i % 3];
+        if (!mat) return;
+        loadTex('assets/gen/' + file, (tex) => {
+          tex.wrapS = tex.wrapT = RepeatWrapping;
+          tex.anisotropy = 8;
+          mat.map = tex;
+          mat.needsUpdate = true;
+        });
+      });
     });
     if (glassGeos.length) {
       scene.add(new Mesh(mergeGeometries(glassGeos, false), new MeshStandardMaterial({
@@ -599,6 +731,8 @@ export function startWorld() {
   }
 
   // ---- scroll to path position ----------------------------------------------
+  const DWELL = 0.42;
+  const CREEP = 0.01;
   let tops = [];
   const measure = () => { tops = stops.map((s) => s.offsetTop); };
   const targetT = () => {
@@ -608,7 +742,10 @@ export function startWorld() {
     for (let i = 0; i < tops.length - 1; i++) {
       if (y < tops[i + 1]) {
         const f = (y - tops[i]) / Math.max(1, tops[i + 1] - tops[i]);
-        return MathUtils.lerp(stopT[i], stopT[i + 1], MathUtils.smoothstep(f, 0.15, 0.95));
+        // first part of each section: hold at the stop (creeping a little) so the text reads;
+        // the rest: fly to the next stop
+        if (f < DWELL) return stopT[i] + CREEP * (f / DWELL);
+        return MathUtils.lerp(stopT[i] + CREEP, stopT[i + 1], MathUtils.smoothstep(f, DWELL, 0.97));
       }
     }
     const last = tops.length - 1;
@@ -629,11 +766,15 @@ export function startWorld() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight, false);
+    css.setSize(innerWidth, innerHeight);
+    layoutCards();
     measure();
   };
   addEventListener('resize', onResize);
-  addEventListener('load', measure);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  addEventListener('load', () => { layoutCards(); measure(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { layoutCards(); measure(); });
+  // opening an FAQ answer changes a card's height: refit it
+  document.addEventListener('toggle', () => layoutCards(), true);
 
   const api = {
     highlight(tag) {
@@ -676,11 +817,28 @@ export function startWorld() {
     }
     billboards.forEach((b) => b.lookAt(camera.position));
 
+    cards.forEach((c) => {
+      const d = t - c.st;
+      let o = 1;
+      if (d < 0 && !c.first) o = MathUtils.smoothstep(d, -0.085, -0.02);
+      if (d > 0 && !c.last) o = 1 - MathUtils.smoothstep(d, CREEP + 0.004, CREEP + 0.03);
+      if (o !== c.o) {
+        c.o = o;
+        c.wrap.style.opacity = o.toFixed(3);
+        c.wrap.style.visibility = o < 0.02 ? 'hidden' : 'visible';
+        c.wrap.style.pointerEvents = o > 0.6 ? 'auto' : 'none';
+      }
+    });
+
     renderer.render(scene, camera);
+    css.render(cssScene, camera);
     requestAnimationFrame(frame);
   }
+  root.classList.add('has-world', 'world-text');
+  css.render(cssScene, camera);   // puts the cards in the DOM so they can be measured
+  layoutCards();
+  measure();
   requestAnimationFrame(frame);
-  root.classList.add('has-world');
   return api;
 }
 

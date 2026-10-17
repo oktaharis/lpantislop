@@ -36,6 +36,7 @@
     if (fill) fill.style.height = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
   };
   addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(updateRail); } }, { passive: true });
+  addEventListener('scroll', () => document.documentElement.classList.toggle('scrolled', scrollY > 40), { passive: true });
   updateRail();
 
   /* Zoom keeps you on the same stop: remember it, restore after a resize. */
