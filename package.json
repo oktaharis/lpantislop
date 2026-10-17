@@ -7,6 +7,7 @@
     "build": "esbuild src/world.js --bundle --minify --format=esm --target=es2020 --outfile=assets/world.js"
   },
   "devDependencies": {
+    "@pmndrs/assets": "^1.7.0",
     "esbuild": "^0.28.2",
     "three": "^0.186.1"
   }
