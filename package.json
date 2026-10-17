@@ -1,0 +1,13 @@
+{
+  "name": "jp-corps-landing",
+  "private": true,
+  "version": "1.0.0",
+  "description": "JP Corps landing page with a scroll-driven 3D world",
+  "scripts": {
+    "build": "esbuild src/world.js --bundle --minify --format=esm --target=es2020 --outfile=assets/world.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.186.1"
+  }
+}

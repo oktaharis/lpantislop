@@ -1,90 +1,100 @@
 (() => {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* Fit a wordmark to the width of its container (desktop: one line). */
-  function fit(el) {
-    const span = el.firstElementChild;
-    if (matchMedia('(max-width: 760px)').matches) { el.style.fontSize = ''; return; }
-    const target = el.parentElement.clientWidth - parseFloat(getComputedStyle(el.parentElement).paddingLeft) * 2;
-    el.style.fontSize = '100px';
-    const w = span.offsetWidth;
-    el.style.fontSize = Math.floor((100 * target) / w) + 'px';
-  }
-  const wm = $('#wordmark'), fm = $('#footmark');
-  const refit = () => { fit(wm); fit(fm); };
-  refit();
-  addEventListener('resize', refit);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
-
-  /* Signature move: the wordmark scales with scroll (travel under 8%). */
-  if (!reduce) {
-    const hero = $('#top');
-    const foot = $('.foot');
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const vh = innerHeight;
-      const p = Math.min(1, Math.max(0, scrollY / (vh * 0.9)));
-      wm.style.transform = `scale(${(1 - 0.07 * p).toFixed(4)})`;
-      const fr = foot.getBoundingClientRect();
-      const q = Math.min(1, Math.max(0, 1 - fr.top / vh));
-      fm.style.transform = `scale(${(0.94 + 0.06 * q).toFixed(4)})`;
-    };
-    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-    update();
+  /* Hero video feeds the 3D disc: keep it playing (muted). */
+  const hv = $('#world-video');
+  if (hv) {
+    hv.muted = true;
+    const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
+    start();
+    ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach((ev) =>
+      addEventListener(ev, function once() { if (hv.paused) start(); removeEventListener(ev, once); }, { passive: true }));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
   }
 
-  /* Staggered entrances: heading, then text, then pictures. */
-  const targets = [
-    ['.services .section-title', 0], ['.group', 80], ['.desc', 160],
-    ['.work-title', 0], ['.work-head .underlined', 80], ['.work-note', 120], ['.row figure', 70],
-    ['.step-line', 0], ['.steps p', 90],
-    ['.faq-title', 0], ['details', 70],
-    ['.contact-line', 0], ['.email', 90], ['.foot-cols ul', 70],
-  ];
-  targets.forEach(([sel, step]) => {
-    $$(sel).forEach((el, i) => {
-      el.setAttribute('data-reveal', '');
-      el.style.setProperty('--d', (sel === '.group' || sel === '.row figure' || sel === 'details' || sel === '.foot-cols ul' ? i * step : step) + 'ms');
-    });
-  });
+  /* Panels rise in as their stop arrives. */
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  $$('[data-reveal]').forEach((el) => io.observe(el));
+  }, { threshold: 0.15 });
+  $$('.panel, .hero-copy').forEach((el) => io.observe(el));
+  $$('.hero-copy > *').forEach((el, i) => el.style.setProperty('--delay', i * 110 + 'ms'));
 
-  /* The live thing: hover a service to read it, click a group to light up its projects. */
+  /* Rail: which stop are we at, and how far along the road. */
+  const stops = $$('[data-stop]');
+  const links = $$('.rail a');
+  const fill = $('#rail-fill');
+  let tick = false;
+  const updateRail = () => {
+    tick = false;
+    const mid = scrollY + innerHeight * 0.5;
+    let active = stops[0];
+    stops.forEach((s) => { if (s.offsetTop <= mid) active = s; });
+    links.forEach((a) => a.classList.toggle('active', a.dataset.for === active.id));
+    const max = document.documentElement.scrollHeight - innerHeight;
+    if (fill) fill.style.height = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
+  };
+  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(updateRail); } }, { passive: true });
+  updateRail();
+
+  /* Zoom keeps you on the same stop: remember it, restore after a resize. */
+  let anchor = { el: stops[0], frac: 0 };
+  const track = () => {
+    const mid = innerHeight / 2;
+    for (const el of stops) {
+      const r = el.getBoundingClientRect();
+      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
+    }
+  };
+  addEventListener('scroll', () => requestAnimationFrame(track), { passive: true });
+  track();
+  let lastW = innerWidth, lastH = innerHeight;
+  addEventListener('resize', () => {
+    if (innerWidth === lastW && innerHeight === lastH) return;
+    lastW = innerWidth; lastH = innerHeight;
+    requestAnimationFrame(() => {
+      const r = anchor.el.getBoundingClientRect();
+      scrollTo({ top: Math.max(0, scrollY + r.top + anchor.frac * r.height - innerHeight / 2), behavior: 'instant' });
+    });
+  });
+
+  /* Services: hover reads, click lights up the matching work (page and world). */
   const desc = $('#desc');
-  const defaultDesc = desc.textContent;
+  const defaultDesc = desc ? desc.textContent : '';
   $$('.group li').forEach((li) => {
     li.tabIndex = 0;
-    const show = () => { desc.textContent = li.dataset.desc; };
-    const hide = () => { desc.textContent = defaultDesc; };
+    const show = () => { if (desc) desc.textContent = li.dataset.desc; };
+    const hide = () => { if (desc) desc.textContent = defaultDesc; };
     li.addEventListener('mouseenter', show);
     li.addEventListener('focus', show);
     li.addEventListener('mouseleave', hide);
     li.addEventListener('blur', hide);
   });
 
-  const wall = $('.wall');
+  const list = $('.work-list');
   const note = $('#work-note');
-  const baseNote = note.textContent;
+  const baseNote = note ? note.textContent : '';
   const buttons = $$('.group-name');
   buttons.forEach((b) => {
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
       const on = b.getAttribute('aria-pressed') !== 'true';
       buttons.forEach((x) => x.setAttribute('aria-pressed', 'false'));
-      $$('.wall figure').forEach((f) => f.classList.remove('match'));
-      if (!on) { wall.classList.remove('filtering'); note.textContent = baseNote; return; }
+      $$('.work-list li').forEach((li) => li.classList.remove('match'));
+      if (!on) {
+        list.classList.remove('filtering');
+        note.textContent = baseNote;
+        if (window.jpWorld) window.jpWorld.highlight(null);
+        return;
+      }
       b.setAttribute('aria-pressed', 'true');
       const tag = b.dataset.filter;
       let n = 0;
-      $$('.wall figure').forEach((f) => { if (f.dataset.tags.split(' ').includes(tag)) { f.classList.add('match'); n++; } });
-      wall.classList.add('filtering');
-      note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk menampilkan semua.`;
+      $$('.work-list li').forEach((li) => { if (li.dataset.tags.split(' ').includes(tag)) { li.classList.add('match'); n++; } });
+      list.classList.add('filtering');
+      note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk semua.`;
+      if (window.jpWorld) window.jpWorld.highlight(tag);
       $('#karya').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     });
   });
