@@ -11,7 +11,7 @@ import {
   ConeGeometry, Object3D, CatmullRomCurve3, Vector3, CircleGeometry,
   RingGeometry, VideoTexture, TextureLoader, SRGBColorSpace, TorusGeometry, CanvasTexture,
   BufferGeometry, Float32BufferAttribute, Points, PointsMaterial, DoubleSide, Group, MathUtils,
-  RepeatWrapping, EquirectangularReflectionMapping, ACESFilmicToneMapping,
+  RepeatWrapping, MirroredRepeatWrapping, EquirectangularReflectionMapping, ACESFilmicToneMapping,
 } from 'three';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -103,9 +103,31 @@ function discTexture({ title, sub, bg, fg, accent, img }) {
     g.fillStyle = '#ffffff';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = '700 38px Poppins, "Segoe UI", sans-serif';
-    g.fillText(title.length > 26 ? title.slice(0, 25) + '…' : title, s / 2, s * 0.73);
-    if (sub) { g.fillStyle = accent; g.font = '600 30px Inter, "Segoe UI", sans-serif'; g.fillText(sub, s / 2, s * 0.83); }
+    // the band narrows towards the bottom of the circle: wrap to two lines and shrink to fit
+    const maxW = s * 0.7;
+    let size = 36;
+    let lines;
+    for (;;) {
+      g.font = '700 ' + size + 'px Poppins, "Segoe UI", sans-serif';
+      lines = [];
+      let cur = '';
+      for (const w of title.split(' ')) {
+        const test = cur ? cur + ' ' + w : w;
+        if (g.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; } else cur = test;
+      }
+      lines.push(cur);
+      const widest = Math.max(...lines.map((l) => g.measureText(l).width));
+      if ((lines.length <= 2 && widest <= maxW) || size <= 22) break;
+      size -= 2;
+    }
+    const lh = size * 1.15;
+    const y0 = s * 0.72 - ((lines.length - 1) * lh) / 2;
+    lines.slice(0, 2).forEach((l, i) => g.fillText(l, s / 2, y0 + i * lh));
+    if (sub) {
+      g.fillStyle = accent;
+      g.font = '600 ' + Math.round(size * 0.8) + 'px Inter, "Segoe UI", sans-serif';
+      g.fillText(sub, s / 2, y0 + Math.min(lines.length, 2) * lh + 4);
+    }
     const t2 = new CanvasTexture(cv);
     t2.colorSpace = SRGBColorSpace;
     t2.anisotropy = 4;
@@ -219,6 +241,8 @@ export function startWorld() {
     if (m.sky) loadTex('assets/gen/' + m.sky, (tex) => {
       tex.mapping = EquirectangularReflectionMapping;
       scene.background = tex;
+      // distant buildings fade into the sky's own horizon colour
+      if (m.fog) scene.fog.color.set(m.fog);
     });
   });
 
@@ -644,7 +668,12 @@ export function startWorld() {
         const mat = stoneMats[i % 3];
         if (!mat) return;
         loadTex('assets/gen/' + file, (tex) => {
-          tex.wrapS = tex.wrapT = RepeatWrapping;
+          // mirrored tiling hides any seam the generator left; one image spans
+          // 12 world units across (four window bays), height kept in proportion
+          tex.wrapS = tex.wrapT = MirroredRepeatWrapping;
+          const tileW = 12;
+          const tileH = tileW * (tex.image.height / tex.image.width);
+          tex.repeat.set(3 / tileW, 3 / tileH);
           tex.anisotropy = 8;
           mat.map = tex;
           mat.needsUpdate = true;
