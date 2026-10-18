@@ -22,3 +22,12 @@ ffmpeg -i src.mp4 -an -vf "scale=-2:720,unsharp=5:5:0.6:5:5:0.0" -c:v libx264 -p
 
 A connector must start on the previous scene clip's last frame and end on the next scene clip's
 first frame, or the seam will jump.
+
+## Steady camera speed
+
+The AI clips speed up and slow down on their own. `assets/flight-curves.js` holds, per clip, a
+time curve and a scroll weight measured from frame-to-frame motion, so a steady scroll gives a
+steady camera. Regenerate it whenever a clip is replaced.
+
+Phones get `-m` clips: a centre 9:16 crop at 406×720 (`crop=608:1080,scale=406:720`, crf 27, `-g 4`),
+with matching `-m.webp` posters.

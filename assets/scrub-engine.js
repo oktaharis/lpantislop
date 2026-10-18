@@ -88,16 +88,18 @@ function mountScrollWorld(container, config) {
   const SEGMENTS = [];
   SECTIONS.forEach((s, i) => {
     const dive = { kind: 'dive', si: i, clip: s.clip, clipM: s.clipMobile, still: s.still, stillM: s.stillMobile,
-                   accent: s.accent, w: s.scroll || DIVE_W, linger: s.linger || 0 };
+                   accent: s.accent, w: s.scroll || DIVE_W, linger: s.linger || 0, curve: s.curve };
     SEGMENTS.push(dive);
     s._seg = dive;
     // A connector is optional: if connectors[i] is falsy, the two dives simply
     // crossfade directly (no fly-over). Lets a page complete even when a
     // connector can't be generated (e.g. a content-filter false-positive).
     if (i < N - 1 && CONNECTORS[i]) {
+      // JP Corps: optional per-connector scroll length and time curve.
+      const cs = (config.connectorScroll || [])[i], cc = (config.connectorCurves || [])[i];
       SEGMENTS.push({ kind: 'conn', si: i, clip: CONNECTORS[i], clipM: CONNECTORS_M[i],
                       still: SECTIONS[i + 1].still, stillM: SECTIONS[i + 1].stillMobile,
-                      accent: SECTIONS[i + 1].accent, w: CONN_W });
+                      accent: SECTIONS[i + 1].accent, w: cs || CONN_W, curve: cc });
     }
   });
   const NSEG = SEGMENTS.length;
@@ -188,6 +190,7 @@ function mountScrollWorld(container, config) {
   // Per-section dwell: monotone remap of scroll→time so the camera settles mid-scene
   // (where the copy peaks) and moves quicker near the seams. L=0 linear, L=1 full
   // mid-scene pause. f(0)=0, f(1)=1 always, so seam frames are untouched.
+  const curveAt = (c, x) => { const f = clamp(x) * (c.length - 1), i = Math.min(c.length - 2, Math.floor(f)); return c[i] + (c[i + 1] - c[i]) * (f - i); };
   const lingerEase = (x, L) => { L = clamp(L); const c = x - 0.5; return (1 - L) * x + L * (4 * c * c * c + 0.5); };
   let vh = window.innerHeight, stageX = 0, totalW = 0, activeIndex = -1, ticking = false;
   let laidOutW = window.innerWidth;   // width the current layout was computed at (see onResize)
@@ -309,7 +312,9 @@ function mountScrollWorld(container, config) {
       const s = SEGMENTS[i];
       if (y > s.start - 1.6 * vh && y < s.end + 1.6 * vh) loadClip(s);
       const local = clamp((y - s.start) / (s.end - s.start), 0, 1);
-      s.target = s.linger ? lingerEase(local, s.linger) : local;
+      // JP Corps: a `curve` (video-time fractions at even scroll steps) evens out the
+      // clip's own speed changes, so a steady scroll gives a steady camera.
+      s.target = s.curve ? curveAt(s.curve, local) : (s.linger ? lingerEase(local, s.linger) : local);
       let outside = 0;
       if (y < s.start) outside = s.start - y; else if (y > s.end) outside = y - s.end;
       const op = smooth(1 - outside / fade);
@@ -351,7 +356,9 @@ function mountScrollWorld(container, config) {
   }
 
   function raf() {
-    const eps = isMobile() ? 0.02 : 0.008;   // coarser seek step on phones = fewer decodes
+    // JP Corps: the phone clips are small portrait encodes with a keyframe every 4 frames,
+    // so seeks are cheap enough for a finer step than the engine default (0.02).
+    const eps = isMobile() ? 0.012 : 0.008;
     for (let i = 0; i < NSEG; i++) {
       const s = SEGMENTS[i];
       if (!s.hasClip || !s.ready || !s.video) continue;
@@ -360,8 +367,9 @@ function mountScrollWorld(container, config) {
       // cur keeps lerping, so we snap to the latest target the moment it's free.
       if (s.video.seeking) continue;
       if (!s.visible && Math.abs(s.cur - s.target) < 0.002) continue;
-      // JP Corps: Lenis already eases the scroll itself, so follow it more tightly here.
-      s.cur += (s.target - s.cur) * (reduce ? 1 : (window.lenis ? 0.35 : 0.18));
+      // JP Corps: Lenis already eases wheel scrolling, so follow it more tightly there.
+      // Touch scrolling is native (not eased by Lenis), so phones keep the softer follow.
+      s.cur += (s.target - s.cur) * (reduce ? 1 : (window.lenis && !isMobile() ? 0.35 : 0.18));
       const dur = s.video.duration || 1;
       const t = clamp(s.cur, 0, 0.999) * dur;
       if (Math.abs(s.video.currentTime - t) > eps) { try { s.video.currentTime = t; } catch (e) {} }
