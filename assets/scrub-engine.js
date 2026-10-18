@@ -136,6 +136,18 @@ function mountScrollWorld(container, config) {
 
   [sky, scrollbar, topbar, stage, copylayer, route, hint, track].forEach(n => container.appendChild(n));
 
+  // JP Corps: preload gate. A full-screen loader holds the page until the first
+  // `preloadGate` segments are decoded, and scrolling pauses at any segment whose
+  // clip is not ready yet, so the visitor never scrolls through frozen stills.
+  const GATE = reduce ? 0 : Math.min(config.preloadGate || 0, 99);
+  const loader = el('div', 'sw-loader');
+  loader.innerHTML = `<span class="sw-loader__brand">${esc((config.brand && config.brand.name) || '')}</span>` +
+    `<span class="sw-loader__bar"><i></i></span><span class="sw-loader__text">${esc(config.loadingText || 'Loading')} <b>0%</b></span>`;
+  const waitPill = el('div', 'sw-wait');
+  waitPill.innerHTML = `<i></i><span>${esc(config.waitText || 'Loading')}</span>`;
+  if (GATE) container.appendChild(loader);
+  container.appendChild(waitPill);
+
   // segment scenes
   SEGMENTS.forEach(s => {
     const scene = el('div', 'sw-scene'); scene.style.setProperty('--sw-accent', s.accent || '');
@@ -199,14 +211,36 @@ function mountScrollWorld(container, config) {
     else window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
   }
 
+  // Streams the clip so the loader can show byte progress (s.got / s.total).
+  function fetchBlob(url, s) {
+    return fetch(url).then(r => {
+      if (!r.ok) throw new Error(String(r.status));
+      const type = r.headers.get('content-type') || 'video/mp4';
+      s.total = +r.headers.get('content-length') || 0;
+      if (!r.body || !s.total) return r.blob();
+      const reader = r.body.getReader(), chunks = [];
+      s.got = 0;
+      const pump = () => reader.read().then(({ done, value }) => {
+        if (done) return new Blob(chunks, { type });
+        chunks.push(value); s.got += value.length; onProgress();
+        return pump();
+      });
+      return pump();
+    });
+  }
+
   function loadClip(s) {
     // JP Corps: clips load even under prefers-reduced-motion. Many laptops and phones have
     // that setting on by default, and the flight is driven by the visitor's own scroll.
-    if (s.loading || !s.clip) return;
+    if (!s.clip) return Promise.resolve();
+    if (s.promise) return s.promise;
     s.loading = true;
     // Serve the lighter mobile encode on phones when one was provided.
     const url = (isMobile() && s.clipM) ? s.clipM : s.clip;
-    fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error('404')))
+    let settle;
+    s.promise = new Promise(res => { settle = res; });
+    const finish = () => { if (s.done) return; s.done = true; settle(); onProgress(); read(); };
+    fetchBlob(url, s)
       .then(blob => {
         const v = document.createElement('video');
         v.className = 'sw-scene__video';
@@ -218,9 +252,50 @@ function mountScrollWorld(container, config) {
         // painted — on iOS a seeked-but-never-played muted video stays blank, so
         // hiding the still on metadata alone would flash an empty scene.
         v.addEventListener('seeked', () => { s.el.classList.add('has-clip'); }, { once: true });
-        v.addEventListener('loadeddata', () => { try { v.pause(); } catch (e) {} if (userReady) primeVideo(v); });
+        v.addEventListener('loadeddata', () => { try { v.pause(); } catch (e) {} if (userReady) primeVideo(v); finish(); });
+        v.addEventListener('error', finish);
         s.el.appendChild(v); s.video = v; s.hasClip = true;
-      }).catch(() => { s.loading = false; });
+      }).catch(() => { s.failed = true; finish(); });
+    return s.promise;
+  }
+
+  // ---- JP Corps: loader progress, scroll lock and the in-flight wait ----
+  let locked = false, gateOpen = !GATE;
+  function lock(on) {
+    if (on === locked) return;
+    locked = on;
+    if (window.lenis) { on ? window.lenis.stop() : window.lenis.start(); }
+    document.documentElement.classList.toggle('sw-locked', on);
+  }
+  function onProgress() {
+    if (gateOpen) return;
+    const first = SEGMENTS.slice(0, GATE);
+    let got = 0, total = 0;
+    first.forEach(s => {
+      // Until a clip's size is known, count it as one equal share.
+      const t = s.total || 1;
+      total += t; got += s.done ? t : (s.total ? Math.min(s.got || 0, t) : 0);
+    });
+    const pct = Math.round(100 * got / (total || 1));
+    loader.querySelector('i').style.transform = `scaleX(${pct / 100})`;
+    loader.querySelector('b').textContent = pct + '%';
+    if (first.every(s => s.done || !s.clip)) openGate();
+  }
+  function openGate() {
+    if (gateOpen) return;
+    gateOpen = true;
+    loader.classList.add('is-done');
+    setTimeout(() => loader.remove(), 900);
+    lock(false);
+    read();
+  }
+  // While the page waits on a clip, hold the scroll just before it.
+  function checkWait(y) {
+    if (!gateOpen || reduce) return;
+    const need = SEGMENTS.find(s => s.clip && !s.done && y > s.start - 0.15 * vh);
+    waitPill.classList.toggle('is-on', !!need);
+    lock(!!need);
+    if (need) loadClip(need);
   }
 
   function read() {
@@ -229,6 +304,7 @@ function mountScrollWorld(container, config) {
     let ci = 0;
     for (let i = 0; i < NSEG; i++) if (y >= SEGMENTS[i].start) ci = i;
 
+    checkWait(y);
     for (let i = 0; i < NSEG; i++) {
       const s = SEGMENTS[i];
       if (y > s.start - 1.6 * vh && y < s.end + 1.6 * vh) loadClip(s);
@@ -328,6 +404,10 @@ function mountScrollWorld(container, config) {
   window.addEventListener('load', layout);
   layout();
   requestAnimationFrame(raf);
+
+  // JP Corps: load every clip in flight order, one at a time, behind the loader.
+  if (GATE) { lock(true); onProgress(); setTimeout(openGate, 30000); }
+  SEGMENTS.reduce((p, s) => p.then(() => loadClip(s)), Promise.resolve());
 
   // ---- helpers ----
   function el(tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; }

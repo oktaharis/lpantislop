@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/still/hq.webp">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 
@@ -124,7 +124,7 @@
   // Smooth, inertial scrolling for mouse wheels and trackpads; touch keeps native scrolling.
   window.lenis = new Lenis({ lerp: 0.07, wheelMultiplier: 0.9, anchors: { duration: 1.6, offset: -70 }, autoRaf: true });
 </script>
-<script src="assets/scrub-engine.js?v=3"></script>
+<script src="assets/scrub-engine.js?v=4"></script>
 <script>
   mountScrollWorld(document.getElementById('world'), {
     brand: { name: 'JP Corps', href: '#top' },
@@ -133,6 +133,9 @@
     diveScroll: 1.8,
     connScroll: 1.2,
     atmosphere: false,
+    preloadGate: 3,               // hq, the first connector and strategi load before scrolling starts
+    loadingText: 'Menyiapkan perjalanan',
+    waitText: 'Memuat scene berikutnya',
     sections: [
       {
         id: 'kantor', label: 'JP Corps',
