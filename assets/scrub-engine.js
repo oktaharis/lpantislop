@@ -193,7 +193,10 @@ function mountScrollWorld(container, config) {
 
   function jumpTo(i) {
     const seg = SECTIONS[i]._seg;
-    window.scrollTo({ top: seg.start + (seg.end - seg.start) * 0.5, behavior: reduce ? 'auto' : 'smooth' });
+    const top = seg.start + (seg.end - seg.start) * 0.5;
+    // JP Corps: let the page's smooth scroller (Lenis) drive jumps when it is present.
+    if (window.lenis) window.lenis.scrollTo(top, { duration: 1.6 });
+    else window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
   }
 
   function loadClip(s) {
@@ -281,7 +284,8 @@ function mountScrollWorld(container, config) {
       // cur keeps lerping, so we snap to the latest target the moment it's free.
       if (s.video.seeking) continue;
       if (!s.visible && Math.abs(s.cur - s.target) < 0.002) continue;
-      s.cur += (s.target - s.cur) * (reduce ? 1 : 0.18);
+      // JP Corps: Lenis already eases the scroll itself, so follow it more tightly here.
+      s.cur += (s.target - s.cur) * (reduce ? 1 : (window.lenis ? 0.35 : 0.18));
       const dur = s.video.duration || 1;
       const t = clamp(s.cur, 0, 0.999) * dur;
       if (Math.abs(s.video.currentTime - t) > eps) { try { s.video.currentTime = t; } catch (e) {} }

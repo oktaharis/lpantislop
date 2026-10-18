@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/still/hq.webp">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 
@@ -119,14 +119,19 @@
   </section>
 </main>
 
-<script src="assets/scrub-engine.js?v=2"></script>
+<script src="assets/lenis.min.js?v=1"></script>
+<script>
+  // Smooth, inertial scrolling for mouse wheels and trackpads; touch keeps native scrolling.
+  window.lenis = new Lenis({ lerp: 0.07, wheelMultiplier: 0.9, anchors: { duration: 1.6, offset: -70 }, autoRaf: true });
+</script>
+<script src="assets/scrub-engine.js?v=3"></script>
 <script>
   mountScrollWorld(document.getElementById('world'), {
     brand: { name: 'JP Corps', href: '#top' },
     cta: { label: 'Hubungi kami', href: '#kontak' },
     hint: 'Scroll untuk terbang',
-    diveScroll: 1.4,
-    connScroll: 1.0,
+    diveScroll: 1.8,
+    connScroll: 1.2,
     atmosphere: false,
     sections: [
       {
@@ -179,6 +184,6 @@
     connectorsMobile: ['assets/vid/conn1-m.mp4', 'assets/vid/conn2-m.mp4', 'assets/vid/conn3-m.mp4', 'assets/vid/conn4-m.mp4'],
   });
 </script>
-<script src="main.js?v=7"></script>
+<script src="main.js?v=8"></script>
 </body>
 </html>

@@ -58,7 +58,8 @@
       $$('.work-list li').forEach((li) => { if (li.dataset.tags.split(' ').includes(tag)) { li.classList.add('match'); n++; } });
       list.classList.add('filtering');
       note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk semua.`;
-      $('#karya').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      if (window.lenis) window.lenis.scrollTo('#karya', { offset: -70, duration: 1.2 });
+      else $('#karya').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     });
   });
 })();
