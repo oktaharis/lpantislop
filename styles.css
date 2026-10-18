@@ -34,6 +34,10 @@
   :focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
 }
 
+/* Lenis smooth scroll */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
 /* ---------- flight overlay tweaks ---------- */
 .sw-brand__mark { display: none; }
 .sw-brand__name { font-weight: 800; font-size: 1.35rem; letter-spacing: -0.02em; color: var(--red); }
