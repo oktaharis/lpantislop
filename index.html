@@ -2,170 +2,183 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>JP Corps — Layanan dan Portofolio</title>
 <meta name="description" content="JP Corps adalah mitra jasa untuk perusahaan: strategi, operasional, dan teknologi. Jelajahi layanan dan karya kami.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=6">
-<script>document.documentElement.classList.add('js')</script>
+<link rel="preload" as="image" href="assets/still/hq.webp">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
-<!-- The 3D world sits behind the page; the page content scrolls over it. -->
-<canvas id="world" aria-hidden="true"></canvas>
-<video id="world-video" muted loop playsinline autoplay preload="auto" poster="assets/hero-poster.jpg" aria-hidden="true" tabindex="-1">
-  <source src="assets/hero.mp4?v=1" type="video/mp4">
-</video>
+<div id="top"></div>
+<!-- The flight: five paper dioramas joined by four camera moves, scrubbed by scroll. -->
+<div id="world"></div>
 
-<header class="topbar">
-  <a class="brand" href="#top">JP Corps</a>
-  <nav class="nav" aria-label="Utama">
-    <a href="#layanan">Layanan</a>
-    <a href="#karya">Karya</a>
-    <a href="#cara-kerja">Cara kerja</a>
-    <a href="#tanya">FAQ</a>
-  </nav>
-  <a class="btn btn-small" href="#kontak">Hubungi kami</a>
-</header>
-
-<nav class="rail" aria-label="Posisi di halaman">
-  <span class="rail-line"><span class="rail-fill" id="rail-fill"></span></span>
-  <ol>
-    <li><a href="#top" data-for="top"><i></i><span>Mulai</span></a></li>
-    <li><a href="#layanan" data-for="layanan"><i></i><span>Layanan</span></a></li>
-    <li><a href="#karya" data-for="karya"><i></i><span>Karya</span></a></li>
-    <li><a href="#cara-kerja" data-for="cara-kerja"><i></i><span>Cara kerja</span></a></li>
-    <li><a href="#tanya" data-for="tanya"><i></i><span>FAQ</span></a></li>
-    <li><a href="#kontak" data-for="kontak"><i></i><span>Kontak</span></a></li>
-  </ol>
-</nav>
-
-<main>
-  <!-- STOP 0 · HERO -->
-  <section class="stop stop-hero" id="top" data-stop data-side="left">
-    <div class="hero-copy">
-      <p class="tag"><span></span>Mitra jasa untuk perusahaan</p>
-      <h1 class="hero-title">JP Corps</h1>
-      <p class="hero-lead">Strategi, operasional, dan teknologi dari satu tim. Dari rencana sampai hasilnya berdiri sendiri.</p>
-      <div class="hero-actions">
-        <a class="btn" href="#layanan">Jelajahi layanan</a>
-        <a class="link" href="#kontak">Ajak bicara</a>
+<main class="after">
+  <section class="block" id="layanan" aria-labelledby="layanan-h">
+    <p class="tag"><span></span>Layanan</p>
+    <h2 id="layanan-h" class="title">Tiga kelompok layanan, satu tim.</h2>
+    <div class="services">
+      <div class="group">
+        <button class="group-name" type="button" data-filter="strategi">Strategi dan riset</button>
+        <ul>
+          <li data-desc="Memetakan pasar, pesaing, dan peluang sebelum satu rupiah pun dikeluarkan.">Pemetaan pasar</li>
+          <li data-desc="Menyusun arah tiga tahun yang bisa dipegang tim, bukan hanya dipajang.">Rencana bisnis</li>
+          <li data-desc="Menimbang layak atau tidaknya sebuah ekspansi dengan angka yang bisa diperiksa.">Studi kelayakan</li>
+          <li data-desc="Membaca perilaku pelanggan langsung dari lapangan.">Riset pelanggan</li>
+          <li data-desc="Merumuskan harga yang menutup biaya dan masih diterima pasar.">Penetapan harga</li>
+          <li data-desc="Menyiapkan bahan rapat direksi yang jelas dan tidak bertele-tele.">Bahan direksi</li>
+        </ul>
+      </div>
+      <div class="group">
+        <button class="group-name" type="button" data-filter="operasional">Operasional</button>
+        <ul>
+          <li data-desc="Menggambar ulang alur kerja supaya pekerjaan tidak menunggu antrean.">Perbaikan proses</li>
+          <li data-desc="Mengatur rantai pasok dari pemasok sampai pintu pelanggan.">Rantai pasok</li>
+          <li data-desc="Membangun prosedur tertulis yang benar-benar dipakai di lantai kerja.">Prosedur standar</li>
+          <li data-desc="Menyiapkan tim baru agar siap bekerja di minggu pertama.">Pelatihan tim</li>
+          <li data-desc="Memantau mutu dan menutup celah sebelum jadi keluhan.">Pengendalian mutu</li>
+          <li data-desc="Mengelola kontrak, vendor, dan jadwal agar tidak saling bertabrakan.">Manajemen vendor</li>
+        </ul>
+      </div>
+      <div class="group">
+        <button class="group-name" type="button" data-filter="teknologi">Teknologi</button>
+        <ul>
+          <li data-desc="Membangun aplikasi internal yang sesuai cara kerja timmu.">Aplikasi internal</li>
+          <li data-desc="Menyambungkan sistem lama dan baru supaya datanya satu.">Integrasi sistem</li>
+          <li data-desc="Mengubah data mentah menjadi laporan yang bisa dibaca pimpinan.">Laporan dan data</li>
+          <li data-desc="Memindahkan layanan ke cloud tanpa menghentikan operasional.">Migrasi cloud</li>
+          <li data-desc="Menjaga akses dan data perusahaan tetap aman.">Keamanan data</li>
+          <li data-desc="Mendampingi tim teknis internal setelah sistem berjalan.">Dukungan berkelanjutan</li>
+        </ul>
       </div>
     </div>
-    <p class="scroll-hint" aria-hidden="true"><span></span>Scroll untuk menjelajah</p>
+    <p class="desc" id="desc" aria-live="polite">Arahkan kursor ke satu layanan untuk membaca ringkasannya. Klik nama kelompok untuk menyorot karya terkait.</p>
   </section>
 
-  <!-- STOP 1 · LAYANAN -->
-  <section class="stop stop-left" id="layanan" data-stop data-side="left" data-wide aria-labelledby="layanan-h">
-    <div class="panel panel-wide">
-      <p class="tag"><span></span>Layanan</p>
-      <h2 id="layanan-h" class="title">Tiga kelompok layanan, satu tim.</h2>
-      <div class="services">
-        <div class="group">
-          <button class="group-name" type="button" data-filter="strategi">Strategi dan riset</button>
-          <ul>
-            <li data-desc="Memetakan pasar, pesaing, dan peluang sebelum satu rupiah pun dikeluarkan.">Pemetaan pasar</li>
-            <li data-desc="Menyusun arah tiga tahun yang bisa dipegang tim, bukan hanya dipajang.">Rencana bisnis</li>
-            <li data-desc="Menimbang layak atau tidaknya sebuah ekspansi dengan angka yang bisa diperiksa.">Studi kelayakan</li>
-            <li data-desc="Membaca perilaku pelanggan langsung dari lapangan.">Riset pelanggan</li>
-            <li data-desc="Merumuskan harga yang menutup biaya dan masih diterima pasar.">Penetapan harga</li>
-            <li data-desc="Menyiapkan bahan rapat direksi yang jelas dan tidak bertele-tele.">Bahan direksi</li>
-          </ul>
-        </div>
-        <div class="group">
-          <button class="group-name" type="button" data-filter="operasional">Operasional</button>
-          <ul>
-            <li data-desc="Menggambar ulang alur kerja supaya pekerjaan tidak menunggu antrean.">Perbaikan proses</li>
-            <li data-desc="Mengatur rantai pasok dari pemasok sampai pintu pelanggan.">Rantai pasok</li>
-            <li data-desc="Membangun prosedur tertulis yang benar-benar dipakai di lantai kerja.">Prosedur standar</li>
-            <li data-desc="Menyiapkan tim baru agar siap bekerja di minggu pertama.">Pelatihan tim</li>
-            <li data-desc="Memantau mutu dan menutup celah sebelum jadi keluhan.">Pengendalian mutu</li>
-            <li data-desc="Mengelola kontrak, vendor, dan jadwal agar tidak saling bertabrakan.">Manajemen vendor</li>
-          </ul>
-        </div>
-        <div class="group">
-          <button class="group-name" type="button" data-filter="teknologi">Teknologi</button>
-          <ul>
-            <li data-desc="Membangun aplikasi internal yang sesuai cara kerja timmu.">Aplikasi internal</li>
-            <li data-desc="Menyambungkan sistem lama dan baru supaya datanya satu.">Integrasi sistem</li>
-            <li data-desc="Mengubah data mentah menjadi laporan yang bisa dibaca pimpinan.">Laporan dan data</li>
-            <li data-desc="Memindahkan layanan ke cloud tanpa menghentikan operasional.">Migrasi cloud</li>
-            <li data-desc="Menjaga akses dan data perusahaan tetap aman.">Keamanan data</li>
-            <li data-desc="Mendampingi tim teknis internal setelah sistem berjalan.">Dukungan berkelanjutan</li>
-          </ul>
-        </div>
-      </div>
-      <p class="desc" id="desc" aria-live="polite">Arahkan kursor ke satu layanan untuk membaca ringkasannya. Klik nama kelompok untuk menyorot karya terkait.</p>
-    </div>
-  </section>
-
-  <!-- STOP 2 · KARYA -->
-  <section class="stop stop-right" id="karya" data-stop data-side="right" aria-labelledby="karya-h">
-    <div class="panel">
+  <section class="block block-split" id="karya" aria-labelledby="karya-h">
+    <div>
       <p class="tag"><span></span>Karya</p>
       <h2 id="karya-h" class="title">Pekerjaan yang sudah berdiri.</h2>
       <p class="work-note" id="work-note">Menampilkan semua proyek.</p>
+    </div>
+    <div>
       <ul class="work-list">
-        <li data-tags="strategi" data-name="Pusat distribusi regional" data-year="2024"><span>Pusat distribusi regional</span><em>Strategi</em><b>2024</b></li>
-        <li data-tags="operasional" data-name="Jalur logistik antarpulau" data-year="2022"><span>Jalur logistik antarpulau</span><em>Operasional</em><b>2022</b></li>
-        <li data-tags="teknologi" data-name="Sistem antrean pelanggan" data-year="2024"><span>Sistem antrean pelanggan</span><em>Teknologi</em><b>2024</b></li>
-        <li data-tags="strategi operasional" data-name="Restrukturisasi kantor cabang" data-year="2023"><span>Restrukturisasi kantor cabang</span><em>Strategi, operasional</em><b>2023</b></li>
-        <li data-tags="operasional teknologi" data-name="Pemantauan armada kota" data-year="2024"><span>Pemantauan armada kota</span><em>Operasional, teknologi</em><b>2024</b></li>
-        <li data-tags="teknologi" data-name="Migrasi pusat data" data-year="2022"><span>Migrasi pusat data</span><em>Teknologi</em><b>2022</b></li>
+        <li data-tags="strategi"><span>Pusat distribusi regional</span><em>Strategi</em><b>2024</b></li>
+        <li data-tags="operasional"><span>Jalur logistik antarpulau</span><em>Operasional</em><b>2022</b></li>
+        <li data-tags="teknologi"><span>Sistem antrean pelanggan</span><em>Teknologi</em><b>2024</b></li>
+        <li data-tags="strategi operasional"><span>Restrukturisasi kantor cabang</span><em>Strategi, operasional</em><b>2023</b></li>
+        <li data-tags="operasional teknologi"><span>Pemantauan armada kota</span><em>Operasional, teknologi</em><b>2024</b></li>
+        <li data-tags="teknologi"><span>Migrasi pusat data</span><em>Teknologi</em><b>2022</b></li>
       </ul>
       <p class="fine">Judul proyek di atas adalah contoh. Ganti dengan karya JP Corps yang sebenarnya.</p>
     </div>
   </section>
 
-  <!-- STOP 3 · CARA KERJA -->
-  <section class="stop stop-left" id="cara-kerja" data-stop data-side="left" aria-labelledby="cara-h">
-    <div class="panel">
+  <section class="block block-split" id="cara-kerja" aria-labelledby="cara-h">
+    <div>
       <p class="tag"><span></span>Cara kerja</p>
       <h2 id="cara-h" class="title">Empat langkah, tanpa basa-basi.</h2>
-      <ol class="steps">
-        <li><b>1</b><div><h3>Kamu bercerita.</h3><p>Kami datang, mendengar, dan mencatat masalah apa adanya.</p></div></li>
-        <li><b>2</b><div><h3>Kami membongkar.</h3><p>Setiap bagian diperiksa dengan data, lalu disusun jadi rencana kerja.</p></div></li>
-        <li><b>3</b><div><h3>Kamu memilih.</h3><p>Pilihan lengkap dengan biaya dan risikonya. Keputusan di tanganmu.</p></div></li>
-        <li><b>4</b><div><h3>Kami jalankan.</h3><p>Tim kami di lapangan sampai hasilnya berdiri sendiri tanpa kami.</p></div></li>
-      </ol>
     </div>
+    <ol class="steps">
+      <li><b>1</b><div><h3>Kamu bercerita.</h3><p>Kami datang, mendengar, dan mencatat masalah apa adanya.</p></div></li>
+      <li><b>2</b><div><h3>Kami membongkar.</h3><p>Setiap bagian diperiksa dengan data, lalu disusun jadi rencana kerja.</p></div></li>
+      <li><b>3</b><div><h3>Kamu memilih.</h3><p>Pilihan lengkap dengan biaya dan risikonya. Keputusan di tanganmu.</p></div></li>
+      <li><b>4</b><div><h3>Kami jalankan.</h3><p>Tim kami di lapangan sampai hasilnya berdiri sendiri tanpa kami.</p></div></li>
+    </ol>
   </section>
 
-  <!-- STOP 4 · FAQ -->
-  <section class="stop stop-right" id="tanya" data-stop data-side="right" aria-labelledby="faq-h">
-    <div class="panel">
+  <section class="block block-split" id="tanya" aria-labelledby="faq-h">
+    <div>
       <p class="tag"><span></span>FAQ</p>
       <h2 id="faq-h" class="title">Sering ditanyakan.</h2>
-      <div class="faq-list">
-        <details><summary>Perusahaan seperti apa yang kalian layani?<i aria-hidden="true"></i></summary><p>Perusahaan menengah sampai besar yang butuh mitra untuk satu proyek jelas atau pendampingan jangka panjang.</p></details>
-        <details><summary>Bisakah memesan satu layanan saja?<i aria-hidden="true"></i></summary><p>Bisa. Banyak klien mulai dari satu kelompok, lalu menambah yang lain bila perlu.</p></details>
-        <details><summary>Berapa lama sebuah proyek berjalan?<i aria-hidden="true"></i></summary><p>Kajian singkat butuh beberapa minggu; perubahan operasional atau sistem bisa beberapa bulan.</p></details>
-        <details><summary>Bagaimana cara penetapan biaya?<i aria-hidden="true"></i></summary><p>Penawaran tertulis setelah pertemuan awal, lengkap dengan rincian pekerjaan dan jadwal pembayaran.</p></details>
-        <details><summary>Apakah data perusahaan kami aman?<i aria-hidden="true"></i></summary><p>Kami menandatangani perjanjian kerahasiaan dan membatasi akses data pada tim proyek.</p></details>
-        <details><summary>Apa yang terjadi setelah proyek selesai?<i aria-hidden="true"></i></summary><p>Kami serahkan dokumentasi dan melatih timmu. Dukungan lanjutan tersedia, tidak wajib.</p></details>
-      </div>
+    </div>
+    <div class="faq-list">
+      <details><summary>Perusahaan seperti apa yang kalian layani?<i aria-hidden="true"></i></summary><p>Perusahaan menengah sampai besar yang butuh mitra untuk satu proyek jelas atau pendampingan jangka panjang.</p></details>
+      <details><summary>Bisakah memesan satu layanan saja?<i aria-hidden="true"></i></summary><p>Bisa. Banyak klien mulai dari satu kelompok, lalu menambah yang lain bila perlu.</p></details>
+      <details><summary>Berapa lama sebuah proyek berjalan?<i aria-hidden="true"></i></summary><p>Kajian singkat butuh beberapa minggu; perubahan operasional atau sistem bisa beberapa bulan.</p></details>
+      <details><summary>Bagaimana cara penetapan biaya?<i aria-hidden="true"></i></summary><p>Penawaran tertulis setelah pertemuan awal, lengkap dengan rincian pekerjaan dan jadwal pembayaran.</p></details>
+      <details><summary>Apakah data perusahaan kami aman?<i aria-hidden="true"></i></summary><p>Kami menandatangani perjanjian kerahasiaan dan membatasi akses data pada tim proyek.</p></details>
+      <details><summary>Apa yang terjadi setelah proyek selesai?<i aria-hidden="true"></i></summary><p>Kami serahkan dokumentasi dan melatih timmu. Dukungan lanjutan tersedia, tidak wajib.</p></details>
     </div>
   </section>
 
-  <!-- STOP 5 · KONTAK -->
-  <section class="stop stop-center" id="kontak" data-stop data-side="center" data-wide aria-labelledby="kontak-h">
-    <div class="panel panel-contact">
-      <p class="tag"><span></span>Kontak</p>
-      <h2 id="kontak-h" class="title">Ceritakan pekerjaan yang ingin kamu rapikan.</h2>
-      <a class="email" href="mailto:halo@jpcorps.id?subject=Konsultasi%20dengan%20JP%20Corps&amp;body=Halo%20JP%20Corps%2C%0A%0ANama%20perusahaan%3A%20%0ALayanan%20yang%20diminati%3A%20%0ASingkat%20tentang%20kebutuhan%3A%20">halo@jpcorps.id</a>
-      <div class="contact-meta">
-        <p>+62 21 0000 0000<br>Jl. Contoh Raya No. 1, Jakarta</p>
-        <p>Senin sampai Jumat<br>09.00 sampai 17.00</p>
-        <p><a href="#">LinkedIn</a><br><a href="#">Instagram</a></p>
-      </div>
-      <p class="fine">© 2026 JP Corps. Dunia 3D di halaman ini dibuat khusus untuk JP Corps.</p>
+  <section class="block block-contact" id="kontak" aria-labelledby="kontak-h">
+    <p class="tag"><span></span>Kontak</p>
+    <h2 id="kontak-h" class="title">Ceritakan pekerjaan yang ingin kamu rapikan.</h2>
+    <a class="email" href="mailto:halo@jpcorps.id?subject=Konsultasi%20dengan%20JP%20Corps&amp;body=Halo%20JP%20Corps%2C%0A%0ANama%20perusahaan%3A%20%0ALayanan%20yang%20diminati%3A%20%0ASingkat%20tentang%20kebutuhan%3A%20">halo@jpcorps.id</a>
+    <div class="contact-meta">
+      <p>+62 21 0000 0000<br>Jl. Contoh Raya No. 1, Jakarta</p>
+      <p>Senin sampai Jumat<br>09.00 sampai 17.00</p>
+      <p><a href="#">LinkedIn</a><br><a href="#">Instagram</a></p>
     </div>
+    <p class="fine">© 2026 JP Corps.</p>
   </section>
 </main>
 
-<script src="main.js?v=6"></script>
-<script type="module" src="assets/world.js?v=10"></script>
+<script src="assets/scrub-engine.js?v=1"></script>
+<script>
+  mountScrollWorld(document.getElementById('world'), {
+    brand: { name: 'JP Corps', href: '#top' },
+    cta: { label: 'Hubungi kami', href: '#kontak' },
+    hint: 'Scroll untuk terbang',
+    diveScroll: 1.4,
+    connScroll: 1.0,
+    atmosphere: false,
+    sections: [
+      {
+        id: 'kantor', label: 'JP Corps',
+        still: 'assets/still/hq.webp', clip: 'assets/vid/hq.mp4', clipMobile: 'assets/vid/hq-m.mp4',
+        accent: '#2a1077',
+        eyebrow: 'Strategi · Operasional · Teknologi',
+        title: 'Satu tim, sampai hasilnya berdiri.',
+        body: 'JP Corps adalah mitra jasa untuk perusahaan. Scroll untuk terbang melihat cara kami bekerja.',
+      },
+      {
+        id: 'strategi', label: 'Strategi',
+        still: 'assets/still/strategi.webp', clip: 'assets/vid/strategi.mp4', clipMobile: 'assets/vid/strategi-m.mp4',
+        accent: '#c9362f', linger: 0.35,
+        eyebrow: 'Strategi dan riset',
+        title: 'Arah yang bisa dipegang tim.',
+        body: 'Kami memetakan pasar dan menimbang setiap langkah dengan angka yang bisa diperiksa, sebelum satu rupiah dikeluarkan.',
+        tags: ['Pemetaan pasar', 'Rencana bisnis', 'Studi kelayakan'],
+      },
+      {
+        id: 'operasional', label: 'Operasional',
+        still: 'assets/still/operasional.webp', clip: 'assets/vid/operasional.mp4', clipMobile: 'assets/vid/operasional-m.mp4',
+        accent: '#2a1077', linger: 0.35,
+        eyebrow: 'Operasional',
+        title: 'Alur kerja yang tidak menunggu antrean.',
+        body: 'Dari pemasok sampai pintu pelanggan, kami rapikan proses, prosedur, dan vendor supaya pekerjaan terus bergerak.',
+        tags: ['Perbaikan proses', 'Rantai pasok', 'Pengendalian mutu'],
+      },
+      {
+        id: 'teknologi', label: 'Teknologi',
+        still: 'assets/still/teknologi.webp', clip: 'assets/vid/teknologi.mp4', clipMobile: 'assets/vid/teknologi-m.mp4',
+        accent: '#c9362f', linger: 0.35,
+        eyebrow: 'Teknologi',
+        title: 'Sistem yang ikut cara kerjamu.',
+        body: 'Aplikasi internal, integrasi, dan laporan yang bisa dibaca pimpinan, dipasang tanpa menghentikan operasional.',
+        tags: ['Aplikasi internal', 'Integrasi sistem', 'Migrasi cloud'],
+      },
+      {
+        id: 'hasil', label: 'Hasil',
+        still: 'assets/still/hasil.webp', clip: 'assets/vid/hasil.mp4', clipMobile: 'assets/vid/hasil-m.mp4',
+        accent: '#2a1077',
+        eyebrow: 'Hasilnya',
+        title: 'Bisnis yang berjalan sendiri.',
+        body: 'Kami tinggal sampai hasilnya berdiri tanpa kami, lalu menyerahkan semuanya ke timmu.',
+        cta: { primary: { label: 'Lihat layanan', href: '#layanan' },
+               secondary: { label: 'Ajak bicara', href: '#kontak' } },
+      },
+    ],
+    connectors: ['assets/vid/conn1.mp4', 'assets/vid/conn2.mp4', 'assets/vid/conn3.mp4', 'assets/vid/conn4.mp4'],
+    connectorsMobile: ['assets/vid/conn1-m.mp4', 'assets/vid/conn2-m.mp4', 'assets/vid/conn3-m.mp4', 'assets/vid/conn4-m.mp4'],
+  });
+</script>
+<script src="main.js?v=7"></script>
 </body>
 </html>
