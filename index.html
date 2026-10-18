@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="assets/still/hq.webp">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 
@@ -124,57 +124,61 @@
   // Smooth, inertial scrolling for mouse wheels and trackpads; touch keeps native scrolling.
   window.lenis = new Lenis({ lerp: 0.07, wheelMultiplier: 0.9, anchors: { duration: 1.6, offset: -70 }, autoRaf: true });
 </script>
-<script src="assets/scrub-engine.js?v=4"></script>
+<script src="assets/flight-curves.js?v=1"></script>
+<script src="assets/scrub-engine.js?v=6"></script>
 <script>
+  // Phones flick through several screens per swipe, so give each clip more room there.
+  const phone = matchMedia('(max-width: 860px), (hover: none) and (pointer: coarse)').matches;
   mountScrollWorld(document.getElementById('world'), {
     brand: { name: 'JP Corps', href: '#top' },
     cta: { label: 'Hubungi kami', href: '#kontak' },
     hint: 'Scroll untuk terbang',
-    diveScroll: 1.8,
-    connScroll: 1.2,
+    // Scroll length per clip follows how much the camera moves in it (assets/flight-curves.js).
+    diveScroll: phone ? 2.2 : 1.6,
+    connScroll: phone ? 2.2 : 1.6,
     atmosphere: false,
-    preloadGate: 3,               // hq, the first connector and strategi load before scrolling starts
+    preloadGate: 2,               // the first scene and the first connector load before scrolling starts
     loadingText: 'Menyiapkan perjalanan',
     waitText: 'Memuat scene berikutnya',
     sections: [
       {
-        id: 'kantor', label: 'JP Corps',
-        still: 'assets/still/hq.webp', clip: 'assets/vid/hq.mp4', clipMobile: 'assets/vid/hq-m.mp4',
+        id: 'kantor', scroll: FLIGHT.hq.weight * (phone ? 2.2 : 1.6), curve: FLIGHT.hq.curve, label: 'JP Corps',
+        still: 'assets/still/hq.webp', stillMobile: 'assets/still/hq-m.webp', clip: 'assets/vid/hq.mp4', clipMobile: 'assets/vid/hq-m.mp4',
         accent: '#2a1077',
         eyebrow: 'Strategi · Operasional · Teknologi',
         title: 'Satu tim, sampai hasilnya berdiri.',
         body: 'JP Corps adalah mitra jasa untuk perusahaan. Scroll untuk terbang melihat cara kami bekerja.',
       },
       {
-        id: 'strategi', label: 'Strategi',
-        still: 'assets/still/strategi.webp', clip: 'assets/vid/strategi.mp4', clipMobile: 'assets/vid/strategi-m.mp4',
-        accent: '#c9362f', linger: 0.35,
+        id: 'strategi', scroll: FLIGHT.strategi.weight * (phone ? 2.2 : 1.6), curve: FLIGHT.strategi.curve, label: 'Strategi',
+        still: 'assets/still/strategi.webp', stillMobile: 'assets/still/strategi-m.webp', clip: 'assets/vid/strategi.mp4', clipMobile: 'assets/vid/strategi-m.mp4',
+        accent: '#c9362f',
         eyebrow: 'Strategi dan riset',
         title: 'Arah yang bisa dipegang tim.',
         body: 'Kami memetakan pasar dan menimbang setiap langkah dengan angka yang bisa diperiksa, sebelum satu rupiah dikeluarkan.',
         tags: ['Pemetaan pasar', 'Rencana bisnis', 'Studi kelayakan'],
       },
       {
-        id: 'operasional', label: 'Operasional',
-        still: 'assets/still/operasional.webp', clip: 'assets/vid/operasional.mp4', clipMobile: 'assets/vid/operasional-m.mp4',
-        accent: '#2a1077', linger: 0.35,
+        id: 'operasional', scroll: FLIGHT.operasional.weight * (phone ? 2.2 : 1.6), curve: FLIGHT.operasional.curve, label: 'Operasional',
+        still: 'assets/still/operasional.webp', stillMobile: 'assets/still/operasional-m.webp', clip: 'assets/vid/operasional.mp4', clipMobile: 'assets/vid/operasional-m.mp4',
+        accent: '#2a1077',
         eyebrow: 'Operasional',
         title: 'Alur kerja yang tidak menunggu antrean.',
         body: 'Dari pemasok sampai pintu pelanggan, kami rapikan proses, prosedur, dan vendor supaya pekerjaan terus bergerak.',
         tags: ['Perbaikan proses', 'Rantai pasok', 'Pengendalian mutu'],
       },
       {
-        id: 'teknologi', label: 'Teknologi',
-        still: 'assets/still/teknologi.webp', clip: 'assets/vid/teknologi.mp4', clipMobile: 'assets/vid/teknologi-m.mp4',
-        accent: '#c9362f', linger: 0.35,
+        id: 'teknologi', scroll: FLIGHT.teknologi.weight * (phone ? 2.2 : 1.6), curve: FLIGHT.teknologi.curve, label: 'Teknologi',
+        still: 'assets/still/teknologi.webp', stillMobile: 'assets/still/teknologi-m.webp', clip: 'assets/vid/teknologi.mp4', clipMobile: 'assets/vid/teknologi-m.mp4',
+        accent: '#c9362f',
         eyebrow: 'Teknologi',
         title: 'Sistem yang ikut cara kerjamu.',
         body: 'Aplikasi internal, integrasi, dan laporan yang bisa dibaca pimpinan, dipasang tanpa menghentikan operasional.',
         tags: ['Aplikasi internal', 'Integrasi sistem', 'Migrasi cloud'],
       },
       {
-        id: 'hasil', label: 'Hasil',
-        still: 'assets/still/hasil.webp', clip: 'assets/vid/hasil.mp4', clipMobile: 'assets/vid/hasil-m.mp4',
+        id: 'hasil', scroll: FLIGHT.hasil.weight * (phone ? 2.2 : 1.6), curve: FLIGHT.hasil.curve, label: 'Hasil',
+        still: 'assets/still/hasil.webp', stillMobile: 'assets/still/hasil-m.webp', clip: 'assets/vid/hasil.mp4', clipMobile: 'assets/vid/hasil-m.mp4',
         accent: '#2a1077',
         eyebrow: 'Hasilnya',
         title: 'Bisnis yang berjalan sendiri.',
@@ -184,6 +188,8 @@
       },
     ],
     connectors: ['assets/vid/conn1.mp4', 'assets/vid/conn2.mp4', 'assets/vid/conn3.mp4', 'assets/vid/conn4.mp4'],
+    connectorScroll: ['conn1', 'conn2', 'conn3', 'conn4'].map(k => FLIGHT[k].weight * (phone ? 2.2 : 1.6)),
+    connectorCurves: ['conn1', 'conn2', 'conn3', 'conn4'].map(k => FLIGHT[k].curve),
     connectorsMobile: ['assets/vid/conn1-m.mp4', 'assets/vid/conn2-m.mp4', 'assets/vid/conn3-m.mp4', 'assets/vid/conn4-m.mp4'],
   });
 </script>
