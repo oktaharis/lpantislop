@@ -50,6 +50,22 @@ html.lenis, html.lenis body { height: auto; }
 .past-world .sw-route, .past-world .sw-copylayer, .past-world .sw-nav { opacity: 0; pointer-events: none; }
 .sw-route, .sw-copylayer, .sw-nav { transition: opacity .3s; }
 
+/* loader: holds the page until the first scenes are ready */
+.sw-locked, .sw-locked body { overflow: hidden; }
+.sw-loader { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 22px; background: var(--bg); transition: opacity .7s var(--ease), visibility .7s; }
+.sw-loader.is-done { opacity: 0; visibility: hidden; }
+.sw-loader__brand { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.2rem, 1.4rem + 3vw, 3.6rem); letter-spacing: -0.03em; color: var(--red); }
+.sw-loader__bar { width: min(260px, 60vw); height: 3px; background: var(--line); overflow: hidden; }
+.sw-loader__bar i { display: block; height: 100%; background: var(--ink); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s linear; }
+.sw-loader__text { font-size: 13px; font-weight: 600; color: var(--muted); }
+.sw-loader__text b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* shown when the visitor out-scrolls the download */
+.sw-wait { position: fixed; left: 50%; bottom: 28px; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: color-mix(in srgb, #fff 88%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(42, 16, 119, .12); font-size: 13px; font-weight: 600; color: var(--ink); opacity: 0; transform: translate(-50%, 10px); transition: opacity .3s, transform .3s var(--ease); pointer-events: none; }
+.sw-wait.is-on { opacity: 1; transform: translate(-50%, 0); }
+.sw-wait i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--red); animation: sw-spin .8s linear infinite; }
+@keyframes sw-spin { to { transform: rotate(1turn); } }
+
 /* ---------- content after the flight ---------- */
 .sw-particles { display: none; }
 /* Hold the last frame once the flight ends, so the content rises over it instead of an empty screen. */
