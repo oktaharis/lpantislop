@@ -2,65 +2,29 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const root = document.documentElement;
+  root.classList.add('js');
 
-  /* Hero video feeds the 3D disc: keep it playing (muted). */
-  const hv = $('#world-video');
-  if (hv) {
-    hv.muted = true;
-    const start = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
-    start();
-    ['pointerdown', 'touchstart', 'keydown', 'scroll'].forEach((ev) =>
-      addEventListener(ev, function once() { if (hv.paused) start(); removeEventListener(ev, once); }, { passive: true }));
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && hv.paused) start(); });
-  }
+  /* Once the page content covers the flight, calm the flight overlay. */
+  const after = $('.after');
+  const track = $('.sw-track');
+  let tick = false;
+  const onScroll = () => {
+    tick = false;
+    // The engine's track is one screen longer than the flight itself.
+    root.classList.toggle('flight-done', track && scrollY >= track.offsetHeight - innerHeight);
+    root.classList.toggle('past-world', after.getBoundingClientRect().top < innerHeight * 0.6);
+  };
+  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  onScroll();
 
-  /* Panels rise in as their stop arrives. */
+  /* Blocks rise in as they arrive. */
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: 0.15 });
-  $$('.panel, .hero-copy').forEach((el) => io.observe(el));
-  $$('.hero-copy > *').forEach((el, i) => el.style.setProperty('--delay', i * 110 + 'ms'));
+  }, { threshold: 0.12 });
+  $$('.block').forEach((el) => io.observe(el));
 
-  /* Rail: which stop are we at, and how far along the road. */
-  const stops = $$('[data-stop]');
-  const links = $$('.rail a');
-  const fill = $('#rail-fill');
-  let tick = false;
-  const updateRail = () => {
-    tick = false;
-    const mid = scrollY + innerHeight * 0.5;
-    let active = stops[0];
-    stops.forEach((s) => { if (s.offsetTop <= mid) active = s; });
-    links.forEach((a) => a.classList.toggle('active', a.dataset.for === active.id));
-    const max = document.documentElement.scrollHeight - innerHeight;
-    if (fill) fill.style.height = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
-  };
-  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(updateRail); } }, { passive: true });
-  addEventListener('scroll', () => document.documentElement.classList.toggle('scrolled', scrollY > 40), { passive: true });
-  updateRail();
-
-  /* Zoom keeps you on the same stop: remember it, restore after a resize. */
-  let anchor = { el: stops[0], frac: 0 };
-  const track = () => {
-    const mid = innerHeight / 2;
-    for (const el of stops) {
-      const r = el.getBoundingClientRect();
-      if (r.top <= mid && r.bottom > mid) { anchor = { el, frac: (mid - r.top) / r.height }; return; }
-    }
-  };
-  addEventListener('scroll', () => requestAnimationFrame(track), { passive: true });
-  track();
-  let lastW = innerWidth, lastH = innerHeight;
-  addEventListener('resize', () => {
-    if (innerWidth === lastW && innerHeight === lastH) return;
-    lastW = innerWidth; lastH = innerHeight;
-    requestAnimationFrame(() => {
-      const r = anchor.el.getBoundingClientRect();
-      scrollTo({ top: Math.max(0, scrollY + r.top + anchor.frac * r.height - innerHeight / 2), behavior: 'instant' });
-    });
-  });
-
-  /* Services: hover reads, click lights up the matching work (page and world). */
+  /* Services: hover reads, click highlights the matching work. */
   const desc = $('#desc');
   const defaultDesc = desc ? desc.textContent : '';
   $$('.group li').forEach((li) => {
@@ -86,7 +50,6 @@
       if (!on) {
         list.classList.remove('filtering');
         note.textContent = baseNote;
-        if (window.jpWorld) window.jpWorld.highlight(null);
         return;
       }
       b.setAttribute('aria-pressed', 'true');
@@ -95,7 +58,6 @@
       $$('.work-list li').forEach((li) => { if (li.dataset.tags.split(' ').includes(tag)) { li.classList.add('match'); n++; } });
       list.classList.add('filtering');
       note.textContent = `Menyorot ${n} proyek untuk ${b.textContent.toLowerCase()}. Klik lagi untuk semua.`;
-      if (window.jpWorld) window.jpWorld.highlight(tag);
       $('#karya').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     });
   });
