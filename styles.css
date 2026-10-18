@@ -37,7 +37,8 @@
 /* ---------- flight overlay tweaks ---------- */
 .sw-brand__mark { display: none; }
 .sw-brand__name { font-weight: 800; font-size: 1.35rem; letter-spacing: -0.02em; color: var(--red); }
-.sw-copy__title { font-weight: 700; letter-spacing: -0.025em; }
+.sw-copy__title { font-weight: 700; letter-spacing: -0.025em; font-size: clamp(2rem, 3.4vw, 3rem); }
+@media (max-width: 860px) { .sw-copy__title { font-size: clamp(1.9rem, 7.5vw, 2.7rem); } }
 .sw-topcta { background: var(--ink); transition: background .25s; }
 .sw-topcta:hover { background: var(--red); }
 .sw-topbar { transition: background .3s, box-shadow .3s; }
