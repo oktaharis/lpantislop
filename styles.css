@@ -41,9 +41,10 @@ html.lenis, html.lenis body { height: auto; }
 /* ---------- flight overlay tweaks ---------- */
 .sw-brand { gap: 12px; }
 /* The logo is a render on black, so it sits in a dark tile rather than on the paper backdrop. */
-.sw-brand__mark { width: 52px; height: 40px; border-radius: 10px; background: #000; box-shadow: 0 6px 18px rgba(10, 20, 60, .28); overflow: hidden; display: grid; place-items: center; }
-.sw-brand__mark img { width: 100%; height: 100%; object-fit: cover; }
-.sw-brand__name { font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; color: var(--ink); }
+.sw-brand__mark { width: 70px; height: 49px; border-radius: 10px; background: #000; box-shadow: 0 6px 18px rgba(10, 20, 60, .28); overflow: hidden; display: grid; place-items: center; }
+.sw-brand__mark img { width: 100%; height: 100%; object-fit: contain; }
+/* Wordmark set like the logo's: serif capitals in the logo blue. */
+.sw-brand__name { font-family: "Cinzel", "Times New Roman", serif; font-weight: 700; font-size: 1.3rem; letter-spacing: .08em; color: #0f4a90; }
 .sw-copy__title { font-weight: 700; letter-spacing: -0.025em; font-size: clamp(2rem, 3.4vw, 3rem); }
 .sw-topcta { background: var(--ink); transition: background .25s; }
 .sw-topcta:hover { background: var(--red); }
@@ -137,8 +138,8 @@ details p { padding: 0 0 18px; color: var(--muted); font-size: 15px; max-width: 
 @media (max-width: 860px) {
   .sw-hint, .sw-route, .sw-copy__num, .sw-copy__tags { display: none; }
   .sw-topbar { padding: 14px 16px; }
-  .sw-brand__name { font-size: 1.1rem; }
-  .sw-brand__mark { width: 44px; height: 34px; border-radius: 8px; }
+  .sw-brand__name { font-size: 1.02rem; }
+  .sw-brand__mark { width: 56px; height: 39px; border-radius: 8px; }
   .sw-topcta { padding: 8px 14px; font-size: .82rem; }
   .sw-copylayer::before { height: 46%; background: linear-gradient(0deg, var(--bg) 12%, color-mix(in srgb, var(--bg) 78%, transparent) 50%, transparent 100%); }
   .sw-copy { left: 16px; right: 16px; bottom: calc(28px + env(safe-area-inset-bottom)); }
