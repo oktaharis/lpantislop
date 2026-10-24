@@ -1,4 +1,6 @@
-/* scroll-world scrub engine, from github.com/oso95/scroll-world (MIT License, Copyright (c) 2026 cyw). */
+/* scroll-world scrub engine, from github.com/oso95/scroll-world (MIT License, Copyright (c) 2026 cyw).
+   Adapted for JP Corps: scenes are image sequences drawn on a canvas instead of seeked videos,
+   with a brand loader and coarse-to-fine frame loading (see the "JP Corps" comments). */
 /* ============================================================================
    scroll-world — portable scroll-scrubbed camera-flight engine
    ----------------------------------------------------------------------------
@@ -87,17 +89,18 @@ function mountScrollWorld(container, config) {
   // ---- build the interleaved segment chain: dive0, conn0, dive1, … diveN-1 ----
   const SEGMENTS = [];
   SECTIONS.forEach((s, i) => {
-    const dive = { kind: 'dive', si: i, clip: s.clip, clipM: s.clipMobile, still: s.still, stillM: s.stillMobile,
+    const dive = { kind: 'dive', si: i, clip: s.clip, clipM: s.clipMobile, seq: s.seq, still: s.still, stillM: s.stillMobile,
                    accent: s.accent, w: s.scroll || DIVE_W, linger: s.linger || 0, curve: s.curve };
     SEGMENTS.push(dive);
     s._seg = dive;
     // A connector is optional: if connectors[i] is falsy, the two dives simply
     // crossfade directly (no fly-over). Lets a page complete even when a
     // connector can't be generated (e.g. a content-filter false-positive).
-    if (i < N - 1 && CONNECTORS[i]) {
+    const SEQ_C = config.connectorSeq || [];
+    if (i < N - 1 && (CONNECTORS[i] || SEQ_C[i])) {
       // JP Corps: optional per-connector scroll length and time curve.
       const cs = (config.connectorScroll || [])[i], cc = (config.connectorCurves || [])[i];
-      SEGMENTS.push({ kind: 'conn', si: i, clip: CONNECTORS[i], clipM: CONNECTORS_M[i],
+      SEGMENTS.push({ kind: 'conn', si: i, clip: CONNECTORS[i], clipM: CONNECTORS_M[i], seq: SEQ_C[i],
                       still: SECTIONS[i + 1].still, stillM: SECTIONS[i + 1].stillMobile,
                       accent: SECTIONS[i + 1].accent, w: cs || CONN_W, curve: cc });
     }
@@ -118,7 +121,10 @@ function mountScrollWorld(container, config) {
   const topbar = el('div', 'sw-topbar');
   if (config.brand) {
     const brand = el('a', 'sw-brand'); brand.href = (config.brand.href || '#');
-    brand.appendChild(el('span', 'sw-brand__mark'));
+    const mark = el('span', 'sw-brand__mark');
+    // JP Corps: a logo image inside the mark when one is given.
+    if (config.brand.logo) { const lg = el('img'); lg.src = config.brand.logo; lg.alt = ''; mark.appendChild(lg); }
+    brand.appendChild(mark);
     const nm = el('span', 'sw-brand__name'); nm.textContent = config.brand.name || ''; brand.appendChild(nm);
     topbar.appendChild(brand);
   }
@@ -138,16 +144,13 @@ function mountScrollWorld(container, config) {
 
   [sky, scrollbar, topbar, stage, copylayer, route, hint, track].forEach(n => container.appendChild(n));
 
-  // JP Corps: preload gate. A full-screen loader holds the page until the first
-  // `preloadGate` segments are decoded, and scrolling pauses at any segment whose
-  // clip is not ready yet, so the visitor never scrolls through frozen stills.
-  const GATE = reduce ? 0 : Math.min(config.preloadGate || 0, 99);
+  // JP Corps: brand loader. Shown until the opening of the flight has frames to draw.
   const loader = el('div', 'sw-loader');
-  loader.innerHTML = `<span class="sw-loader__brand">${esc((config.brand && config.brand.name) || '')}</span>` +
-    `<span class="sw-loader__bar"><i></i></span><span class="sw-loader__text">${esc(config.loadingText || 'Loading')} <b>0%</b></span>`;
+  loader.innerHTML = (config.loaderLogo ? `<img class="sw-loader__logo" src="${esc(config.loaderLogo)}" alt="${esc((config.brand && config.brand.name) || '')}">` : '') +
+    `<span class="sw-loader__bar"><i></i></span>`;
+  container.appendChild(loader);
   const waitPill = el('div', 'sw-wait');
   waitPill.innerHTML = `<i></i><span>${esc(config.waitText || 'Loading')}</span>`;
-  if (GATE) container.appendChild(loader);
   container.appendChild(waitPill);
 
   // segment scenes
@@ -157,6 +160,13 @@ function mountScrollWorld(container, config) {
     const poster = (isMobile() && s.stillM) ? s.stillM : s.still;
     if (poster) img.src = poster;
     scene.appendChild(img); stage.appendChild(scene);
+    // JP Corps: image-sequence segments draw into a canvas instead of seeking a video.
+    if (s.seq) {
+      const cv = el('canvas', 'sw-scene__video'); scene.appendChild(cv);
+      s.canvas = cv; s.ctx = cv.getContext('2d');
+      s.count = s.seq.count; s.frames = new Array(s.count); s.asked = new Uint8Array(s.count); s.nLoaded = 0;
+      s.drawn = -1; s.dirty = true;
+    }
     s.el = scene; s.img = img; s.video = null; s.hasClip = false;
     s.loading = false; s.ready = false; s.cur = 0; s.target = 0; s.visible = false;
   });
@@ -214,56 +224,56 @@ function mountScrollWorld(container, config) {
     else window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
   }
 
-  // Streams the clip so the loader can show byte progress (s.got / s.total).
-  function fetchBlob(url, s) {
-    return fetch(url).then(r => {
-      if (!r.ok) throw new Error(String(r.status));
-      const type = r.headers.get('content-type') || 'video/mp4';
-      s.total = +r.headers.get('content-length') || 0;
-      if (!r.body || !s.total) return r.blob();
-      const reader = r.body.getReader(), chunks = [];
-      s.got = 0;
-      const pump = () => reader.read().then(({ done, value }) => {
-        if (done) return new Blob(chunks, { type });
-        chunks.push(value); s.got += value.length; onProgress();
-        return pump();
-      });
-      return pump();
-    });
+  // ---- JP Corps: image-sequence loading ----
+  // Frames load coarse to fine (every 16th, 8th, 4th, 2nd, then all), nearest segments
+  // first, so a scene can be scrubbed long before all of its frames have arrived.
+  const STRIDES = [16, 8, 4, 2, 1];
+  const levelOf = k => { for (let l = 0; l < STRIDES.length; l++) if (k % STRIDES[l] === 0) return l; return STRIDES.length - 1; };
+  const frameURL = (s, k) => `${s.seq.path}/${isMobile() ? 'm' : 'd'}/${String(k).padStart(3, '0')}.webp`;
+  let inflight = 0, curSeg = 0;
+  const MAX_INFLIGHT = 6;
+  function nextTask() {
+    // Segments in order of how soon the visitor reaches them.
+    const order = [];
+    for (let i = curSeg; i < NSEG; i++) order.push(SEGMENTS[i]);
+    for (let i = curSeg - 1; i >= 0; i--) order.push(SEGMENTS[i]);
+    const phases = [[3, 1], [2, 4], [5, 2], [NSEG, 4]];   // [how many segments ahead, finest level]
+    for (const [n, maxL] of phases) {
+      for (let l = 0; l <= maxL; l++) {
+        for (const s of order.slice(0, n)) {
+          if (!s.seq) continue;
+          for (let k = 0; k < s.count; k += STRIDES[l]) {
+            if (!s.asked[k] && levelOf(k) === l) return [s, k];
+          }
+          // The last frame belongs to the coarsest pass, so a seam never waits on it.
+          if (l === 0 && !s.asked[s.count - 1]) return [s, s.count - 1];
+        }
+      }
+    }
+    return null;
   }
-
-  function loadClip(s) {
-    // JP Corps: clips load even under prefers-reduced-motion. Many laptops and phones have
-    // that setting on by default, and the flight is driven by the visitor's own scroll.
-    if (!s.clip) return Promise.resolve();
-    if (s.promise) return s.promise;
-    s.loading = true;
-    // Serve the lighter mobile encode on phones when one was provided.
-    const url = (isMobile() && s.clipM) ? s.clipM : s.clip;
-    let settle;
-    s.promise = new Promise(res => { settle = res; });
-    const finish = () => { if (s.done) return; s.done = true; settle(); onProgress(); read(); };
-    fetchBlob(url, s)
-      .then(blob => {
-        const v = document.createElement('video');
-        v.className = 'sw-scene__video';
-        v.muted = true; v.playsInline = true; v.preload = 'auto';
-        v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-        v.src = URL.createObjectURL(blob);
-        v.addEventListener('loadedmetadata', () => { s.ready = true; read(); });
-        // Reveal the video (hide the still poster) only once a real frame has
-        // painted — on iOS a seeked-but-never-played muted video stays blank, so
-        // hiding the still on metadata alone would flash an empty scene.
-        v.addEventListener('seeked', () => { s.el.classList.add('has-clip'); }, { once: true });
-        v.addEventListener('loadeddata', () => { try { v.pause(); } catch (e) {} if (userReady) primeVideo(v); finish(); });
-        v.addEventListener('error', finish);
-        s.el.appendChild(v); s.video = v; s.hasClip = true;
-      }).catch(() => { s.failed = true; finish(); });
-    return s.promise;
+  function pump() {
+    while (inflight < MAX_INFLIGHT) {
+      const t = nextTask(); if (!t) return;
+      const [s, k] = t; s.asked[k] = 1; inflight++;
+      const im = new Image(); im.decoding = 'async';
+      im.onload = () => {
+        const done = () => { s.frames[k] = im; s.nLoaded++; s.dirty = true; inflight--; onProgress(); pump(); };
+        // decode() keeps the first draw of this frame off the scroll path.
+        if (im.decode) im.decode().then(done, done); else done();
+      };
+      im.onerror = () => { inflight--; pump(); };
+      im.src = frameURL(s, k);
+    }
   }
+  // Coarse frames a segment needs before it may be scrolled into.
+  const coarseReady = s => { if (!s.seq) return true; for (let k = 0; k < s.count; k += STRIDES[0]) if (!s.frames[k]) return false; return !!s.frames[s.count - 1]; };
 
-  // ---- JP Corps: loader progress, scroll lock and the in-flight wait ----
-  let locked = false, gateOpen = !GATE;
+  // ---- JP Corps: loader, scroll lock and the in-flight wait ----
+  let locked = false, gateOpen = false;
+  const gateSegs = SEGMENTS.slice(0, 2).filter(s => s.seq);
+  const gateNeed = gateSegs.reduce((n, s) => n + Math.ceil(s.count / STRIDES[1]) + 1, 0);
+  const t0 = performance.now();
   function lock(on) {
     if (on === locked) return;
     locked = on;
@@ -272,17 +282,11 @@ function mountScrollWorld(container, config) {
   }
   function onProgress() {
     if (gateOpen) return;
-    const first = SEGMENTS.slice(0, GATE);
-    let got = 0, total = 0;
-    first.forEach(s => {
-      // Until a clip's size is known, count it as one equal share.
-      const t = s.total || 1;
-      total += t; got += s.done ? t : (s.total ? Math.min(s.got || 0, t) : 0);
-    });
-    const pct = Math.round(100 * got / (total || 1));
-    loader.querySelector('i').style.transform = `scaleX(${pct / 100})`;
-    loader.querySelector('b').textContent = pct + '%';
-    if (first.every(s => s.done || !s.clip)) openGate();
+    let got = 0;
+    gateSegs.forEach(s => { for (let k = 0; k < s.count; k += STRIDES[1]) if (s.frames[k]) got++; if (s.frames[s.count - 1]) got++; });
+    const pct = Math.min(1, got / (gateNeed || 1));
+    loader.querySelector('i').style.transform = `scaleX(${pct})`;
+    if (pct >= 1) setTimeout(openGate, Math.max(0, 900 - (performance.now() - t0)));   // let the logo register
   }
   function openGate() {
     if (gateOpen) return;
@@ -292,13 +296,12 @@ function mountScrollWorld(container, config) {
     lock(false);
     read();
   }
-  // While the page waits on a clip, hold the scroll just before it.
+  // If the visitor outruns the download, hold the scroll just before the segment.
   function checkWait(y) {
-    if (!gateOpen || reduce) return;
-    const need = SEGMENTS.find(s => s.clip && !s.done && y > s.start - 0.15 * vh);
+    if (!gateOpen) return;
+    const need = SEGMENTS.find(s => s.seq && !coarseReady(s) && y > s.start - 0.1 * vh);
     waitPill.classList.toggle('is-on', !!need);
     lock(!!need);
-    if (need) loadClip(need);
   }
 
   function read() {
@@ -306,11 +309,11 @@ function mountScrollWorld(container, config) {
     const fade = CROSSFADE * vh;
     let ci = 0;
     for (let i = 0; i < NSEG; i++) if (y >= SEGMENTS[i].start) ci = i;
+    if (ci !== curSeg) { curSeg = ci; pump(); }
 
     checkWait(y);
     for (let i = 0; i < NSEG; i++) {
       const s = SEGMENTS[i];
-      if (y > s.start - 1.6 * vh && y < s.end + 1.6 * vh) loadClip(s);
       const local = clamp((y - s.start) / (s.end - s.start), 0, 1);
       // JP Corps: a `curve` (video-time fractions at even scroll steps) evens out the
       // clip's own speed changes, so a steady scroll gives a steady camera.
@@ -320,7 +323,7 @@ function mountScrollWorld(container, config) {
       const op = smooth(1 - outside / fade);
       s.el.style.opacity = op; s.visible = op > 0.001;
       s.el.style.zIndex = (i === ci) ? '120' : String(100 + Math.round(op * 10));
-      if (!s.hasClip || !s.ready) {
+      if (s.seq ? !s.hasClip : (!s.hasClip || !s.ready)) {
         const sc = reduce ? 1 : 1.03 + local * 0.14;
         s.img.style.transform = `translateX(${stageX - 2}vw) scale(${sc.toFixed(3)})`;
       }
@@ -355,45 +358,44 @@ function mountScrollWorld(container, config) {
     ticking = false;
   }
 
+  // Nearest loaded frames at or below / at or above k.
+  function below(s, k) { for (let j = k; j >= 0; j--) if (s.frames[j]) return j; return -1; }
+  function above(s, k) { for (let j = k; j < s.count; j++) if (s.frames[j]) return j; return -1; }
+  function draw(s) {
+    const f = clamp(s.cur) * (s.count - 1);
+    const key = Math.round(f * 8) / 8;            // eighth-frame steps are plenty for the blend
+    if (key === s.drawn && !s.dirty) return;
+    let a = below(s, Math.floor(f)), b = above(s, Math.ceil(f));
+    if (a < 0 && b < 0) return;
+    if (a < 0) a = b; if (b < 0) b = a;
+    // Only blend neighbouring frames; across a gap (finer frames still loading) the
+    // blend would ghost, so show the nearer frame instead.
+    if (b - a > 2) { if (f - a < b - f) b = a; else a = b; }
+    const A = s.frames[a], B = s.frames[b], cv = s.canvas;
+    if (cv.width !== A.naturalWidth) { cv.width = A.naturalWidth; cv.height = A.naturalHeight; }
+    const ctx = s.ctx;
+    ctx.globalAlpha = 1; ctx.drawImage(A, 0, 0);
+    // Blend into the next frame for in-between scroll positions (12 fps source).
+    // The blend is kept to the middle of each step so most positions show one clean frame.
+    if (b !== a) { const t = smooth(((f - a) / (b - a) - 0.3) / 0.4); if (t > 0) { ctx.globalAlpha = t; ctx.drawImage(B, 0, 0); ctx.globalAlpha = 1; } }
+    s.drawn = key; s.dirty = false;
+    if (!s.hasClip) { s.hasClip = true; s.el.classList.add('has-clip'); }
+  }
+
   function raf() {
-    // JP Corps: the phone clips are small portrait encodes with a keyframe every 4 frames,
-    // so seeks are cheap enough for a finer step than the engine default (0.02).
-    const eps = isMobile() ? 0.012 : 0.008;
+    // Canvas frames draw instantly, so the follow can be tight: Lenis already eases
+    // wheel scrolling, and native touch scrolling is smooth on its own.
+    const k = reduce ? 1 : (isMobile() ? 0.45 : 0.4);
     for (let i = 0; i < NSEG; i++) {
       const s = SEGMENTS[i];
-      if (!s.hasClip || !s.ready || !s.video) continue;
-      // Never queue a seek while the decoder is still resolving the last one.
-      // On phones a fast flick would otherwise pile up seeks and freeze the clip;
-      // cur keeps lerping, so we snap to the latest target the moment it's free.
-      if (s.video.seeking) continue;
-      if (!s.visible && Math.abs(s.cur - s.target) < 0.002) continue;
-      // JP Corps: Lenis already eases wheel scrolling, so follow it more tightly there.
-      // Touch scrolling is native (not eased by Lenis), so phones keep the softer follow.
-      s.cur += (s.target - s.cur) * (reduce ? 1 : (window.lenis && !isMobile() ? 0.35 : 0.18));
-      const dur = s.video.duration || 1;
-      const t = clamp(s.cur, 0, 0.999) * dur;
-      if (Math.abs(s.video.currentTime - t) > eps) { try { s.video.currentTime = t; } catch (e) {} }
+      if (!s.seq) continue;
+      if (!s.visible && !s.dirty) continue;
+      s.cur += (s.target - s.cur) * k;
+      if (Math.abs(s.target - s.cur) < 0.0005) s.cur = s.target;
+      if (s.visible) draw(s);
     }
     requestAnimationFrame(raf);
   }
-
-  // iOS needs a user gesture before a muted video will decode/paint reliably. On the
-  // first touch we prime every loaded clip (muted play→pause) so the first seek is
-  // instant instead of showing a blank frame. `userReady` also makes freshly-loaded
-  // clips prime themselves (see loadClip).
-  let userReady = false;
-  function primeVideo(v) {
-    if (!isMobile() || !v) return;
-    try { const p = v.play(); if (p && p.then) p.then(() => { try { v.pause(); } catch (e) {} }).catch(() => {}); }
-    catch (e) {}
-  }
-  function onFirstGesture() {
-    if (userReady) return;
-    userReady = true;
-    SEGMENTS.forEach(s => primeVideo(s.video));
-  }
-  window.addEventListener('pointerdown', onFirstGesture, { once: true, passive: true });
-  window.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
 
   // Particles are a per-frame cost we can't afford alongside video scrubbing on a phone.
   seedParticles(particles, reduce || coarse);
@@ -413,9 +415,11 @@ function mountScrollWorld(container, config) {
   layout();
   requestAnimationFrame(raf);
 
-  // JP Corps: load every clip in flight order, one at a time, behind the loader.
-  if (GATE) { lock(true); onProgress(); setTimeout(openGate, 30000); }
-  SEGMENTS.reduce((p, s) => p.then(() => loadClip(s)), Promise.resolve());
+  // JP Corps: start loading frames behind the brand loader; never hold it past 12 s.
+  // Frames start after the window's load event: images requested earlier would hold
+  // that event (and the browser's loading spinner) until every frame had arrived.
+  lock(true); setTimeout(openGate, 12000);
+  if (document.readyState === 'complete') pump(); else window.addEventListener('load', pump, { once: true });
 
   // ---- helpers ----
   function el(tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; }
